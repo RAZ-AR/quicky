@@ -411,7 +411,7 @@ const taskExecuteRoutes: FastifyPluginAsync = async (fastify) => {
     });
 
     return reply.send({
-      messages: messages.map((m) => ({
+      messages: messages.map((m: any) => ({
         id:             m.id,
         task_id:        m.taskId,
         sender_id:      m.senderId,

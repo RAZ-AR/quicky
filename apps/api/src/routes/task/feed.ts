@@ -67,7 +67,7 @@ const taskFeedRoutes: FastifyPluginAsync = async (fastify) => {
       take: 50,
     });
 
-    const feed = tasks.map((task) => ({
+    const feed = tasks.map((task: any) => ({
       id:            task.id,
       title:         task.title,
       category:      task.category,
