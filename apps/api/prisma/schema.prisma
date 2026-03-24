@@ -1,0 +1,273 @@
+generator client {
+  provider   = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// ─── Перечисления ─────────────────────────────────────────────────────────────
+
+enum UserRole {
+  client
+  executor
+  admin
+}
+
+enum TaskCategory {
+  buy_deliver
+  pickup_drop
+  simple_errand
+}
+
+enum TaskState {
+  draft
+  pending_confirm
+  published
+  accepted
+  in_progress
+  pending_client
+  completed
+  rated
+  cancelled
+  disputed
+}
+
+enum MessageType {
+  item_not_available
+  need_clarification
+  price_change
+  client_response
+  system_timeout
+  call_initiated
+}
+
+enum DisputeType {
+  wrong_item
+  not_delivered
+  price_dispute
+  other
+}
+
+enum DisputeStatus {
+  open
+  under_review
+  resolved
+  rejected
+}
+
+enum DisputeResolution {
+  full_refund
+  partial_refund
+  rejected
+}
+
+enum PaymentMethod {
+  cash_on_delivery
+  pseudo_escrow
+}
+
+enum PaymentStatus {
+  pending
+  held
+  released
+  refunded
+  failed
+}
+
+// ─── Пользователи ─────────────────────────────────────────────────────────────
+
+model User {
+  id                String    @id @default(uuid())
+  phone             String    @unique
+  name              String
+  role              UserRole  @default(client)
+  avatarUrl         String?
+  pushToken         String?
+  isOnline          Boolean   @default(false)
+  locationLat       Float?
+  locationLng       Float?
+  locationUpdatedAt DateTime?
+  ratingAvg         Decimal   @default(0) @db.Decimal(3, 2)
+  ratingCount       Int       @default(0)
+  completionRate    Decimal   @default(0) @db.Decimal(5, 2)
+  cancellationCount Int       @default(0)
+  isVerified        Boolean   @default(false)
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  tasksAsClient      Task[]               @relation("ClientTasks")
+  tasksAsExecutor    Task[]               @relation("ExecutorTasks")
+  stateTransitions   TaskStateTransition[]
+  messagesSent       TaskMessage[]
+  ratingsGiven       Rating[]             @relation("RatingsGiven")
+  ratingsReceived    Rating[]             @relation("RatingsReceived")
+  disputesReported   Dispute[]            @relation("DisputesReported")
+  disputesResolved   Dispute[]            @relation("DisputesResolved")
+  paymentsAsClient   Payment[]            @relation("PaymentsClient")
+  paymentsAsExecutor Payment[]            @relation("PaymentsExecutor")
+
+  @@map("users")
+}
+
+// ─── Задания ──────────────────────────────────────────────────────────────────
+
+model Task {
+  id         String  @id @default(uuid())
+  clientId   String
+  executorId String?
+
+  title           String
+  rawVoiceText    String?
+  category        TaskCategory
+  itemDescription String?
+  specialNotes    String?
+
+  fromAddress String?
+  fromLat     Float?
+  fromLng     Float?
+  toAddress   String
+  toLat       Float?
+  toLng       Float?
+
+  priceSuggested Decimal? @db.Decimal(10, 2)
+  priceFinal     Decimal? @db.Decimal(10, 2)
+
+  scheduledFor DateTime?
+  expiresAt    DateTime?
+
+  state TaskState @default(draft)
+
+  clarificationStep Int  @default(0)
+  clarificationData Json @default("[]")
+
+  city      String   @default("Belgrade")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  client   User  @relation("ClientTasks",  fields: [clientId],   references: [id])
+  executor User? @relation("ExecutorTasks", fields: [executorId], references: [id])
+
+  stateTransitions TaskStateTransition[]
+  messages         TaskMessage[]
+  ratings          Rating[]
+  dispute          Dispute?
+  payment          Payment?
+
+  @@index([state])
+  @@index([city])
+  @@index([clientId])
+  @@index([executorId])
+  @@index([createdAt(sort: Desc)])
+  @@map("tasks")
+}
+
+// ─── Журнал переходов состояний ───────────────────────────────────────────────
+
+model TaskStateTransition {
+  id          String     @id @default(uuid())
+  taskId      String
+  fromState   TaskState?
+  toState     TaskState
+  triggeredBy String?
+  reason      String?
+  metadata    Json?
+  createdAt   DateTime   @default(now())
+
+  task  Task  @relation(fields: [taskId],      references: [id])
+  actor User? @relation(fields: [triggeredBy], references: [id])
+
+  @@index([taskId])
+  @@map("task_state_transitions")
+}
+
+// ─── Сообщения в процессе выполнения ─────────────────────────────────────────
+
+model TaskMessage {
+  id             String      @id @default(uuid())
+  taskId         String
+  senderId       String
+  messageType    MessageType
+  content        String?
+  photoUrl       String?
+  options        Json?
+  selectedOption String?
+  priceProposed  Decimal?    @db.Decimal(10, 2)
+  priceAccepted  Boolean?
+  expiresAt      DateTime?
+  isResolved     Boolean     @default(false)
+  createdAt      DateTime    @default(now())
+
+  task   Task @relation(fields: [taskId],   references: [id])
+  sender User @relation(fields: [senderId], references: [id])
+
+  @@index([taskId])
+  @@map("task_messages")
+}
+
+// ─── Оценки ───────────────────────────────────────────────────────────────────
+
+model Rating {
+  id        String   @id @default(uuid())
+  taskId    String
+  raterId   String
+  rateeId   String
+  stars     Int
+  comment   String?
+  createdAt DateTime @default(now())
+
+  task  Task @relation(fields: [taskId],  references: [id])
+  rater User @relation("RatingsGiven",    fields: [raterId], references: [id])
+  ratee User @relation("RatingsReceived", fields: [rateeId], references: [id])
+
+  @@unique([taskId, raterId])
+  @@index([rateeId])
+  @@map("ratings")
+}
+
+// ─── Споры ────────────────────────────────────────────────────────────────────
+
+model Dispute {
+  id           String             @id @default(uuid())
+  taskId       String             @unique
+  reporterId   String
+  disputeType  DisputeType
+  description  String?
+  evidenceUrls Json               @default("[]")
+  status       DisputeStatus      @default(open)
+  resolution   DisputeResolution?
+  refundAmount Decimal?           @db.Decimal(10, 2)
+  resolvedBy   String?
+  resolvedAt   DateTime?
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
+
+  task     Task  @relation(fields: [taskId],    references: [id])
+  reporter User  @relation("DisputesReported",  fields: [reporterId], references: [id])
+  resolver User? @relation("DisputesResolved",  fields: [resolvedBy],  references: [id])
+
+  @@map("disputes")
+}
+
+// ─── Платежи ─────────────────────────────────────────────────────────────────
+
+model Payment {
+  id            String        @id @default(uuid())
+  taskId        String        @unique
+  clientId      String
+  executorId    String?
+  amount        Decimal       @db.Decimal(10, 2)
+  paymentMethod PaymentMethod
+  status        PaymentStatus @default(pending)
+  escrowHeld    Boolean       @default(false)
+  releasedAt    DateTime?
+  createdAt     DateTime      @default(now())
+
+  task     Task  @relation(fields: [taskId],   references: [id])
+  client   User  @relation("PaymentsClient",   fields: [clientId],   references: [id])
+  executor User? @relation("PaymentsExecutor", fields: [executorId], references: [id])
+
+  @@map("payments")
+}

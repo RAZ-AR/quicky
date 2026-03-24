@@ -1,0 +1,54 @@
+{
+  "expo": {
+    "name": "Quicky",
+    "slug": "quicky",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "scheme": "quicky",
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.quicky.app"
+    },
+    "android": {
+      "package": "com.quicky.app",
+      "adaptiveIcon": {
+        "backgroundColor": "#E6F4FE",
+        "foregroundImage": "./assets/adaptive-icon.png"
+      }
+    },
+    "web": {
+      "bundler": "metro"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-av",
+      [
+        "expo-notifications",
+        { "color": "#2563EB" }
+      ],
+      [
+        "expo-location",
+        { "locationAlwaysAndWhenInUsePermission": "Allow Quicky to use your location." }
+      ],
+      [
+        "expo-image-picker",
+        { "photosPermission": "Allow Quicky to access your photos." }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": true
+    },
+    "extra": {
+      "router": {
+        "root": "app"
+      }
+    }
+  }
+}
