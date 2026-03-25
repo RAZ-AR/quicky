@@ -20,7 +20,8 @@
       "package": "com.quicky.app",
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
-        "foregroundImage": "./assets/adaptive-icon.png"
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
       }
     },
     "web": {
@@ -48,6 +49,10 @@
     "extra": {
       "router": {
         "root": "app"
+      },
+      "apiUrl": "https://quicky-api.onrender.com",
+      "eas": {
+        "projectId": "quicky"
       }
     }
   }
