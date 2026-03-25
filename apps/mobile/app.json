@@ -22,7 +22,13 @@
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/android-icon-foreground.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
-      }
+      },
+      "permissions": [
+        "android.permission.RECORD_AUDIO",
+        "android.permission.MODIFY_AUDIO_SETTINGS",
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION"
+      ]
     },
     "web": {
       "bundler": "metro"
@@ -32,15 +38,21 @@
       "expo-av",
       [
         "expo-notifications",
-        { "color": "#2563EB" }
+        {
+          "color": "#2563EB"
+        }
       ],
       [
         "expo-location",
-        { "locationAlwaysAndWhenInUsePermission": "Allow Quicky to use your location." }
+        {
+          "locationAlwaysAndWhenInUsePermission": "Allow Quicky to use your location."
+        }
       ],
       [
         "expo-image-picker",
-        { "photosPermission": "Allow Quicky to access your photos." }
+        {
+          "photosPermission": "Allow Quicky to access your photos."
+        }
       ]
     ],
     "experiments": {
@@ -52,8 +64,9 @@
       },
       "apiUrl": "https://quicky-api.onrender.com",
       "eas": {
-        "projectId": "quicky"
+        "projectId": "d5fcb268-3071-4408-82af-30a84a453872"
       }
-    }
+    },
+    "owner": "bari_lus"
   }
 }
