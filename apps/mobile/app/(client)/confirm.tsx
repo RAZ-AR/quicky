@@ -1,12 +1,15 @@
 import { useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView, ScrollView, Alert } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Alert, StatusBar } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
+import { LinearGradient } from 'expo-linear-gradient';
+import { BlurView } from 'expo-blur';
 import { useTaskStore } from '../../src/stores/taskStore';
-import { COLORS } from '../../src/constants/config';
+import { COLORS, RADIUS, GRADIENTS } from '../../src/constants/config';
 
 const PAYMENT_METHODS = [
   { key: 'cash', label: 'Наличные', icon: '💵' },
-  { key: 'card', label: 'Карта', icon: '💳' },
+  { key: 'card', label: 'Карта',    icon: '💳' },
 ];
 
 export default function ConfirmScreen() {
@@ -18,8 +21,7 @@ export default function ConfirmScreen() {
   const parsed = creation.parsed;
   if (!parsed) return null;
 
-  const suggestedPrice = parsed.price_suggested ?? 500;
-  const [price] = useState(suggestedPrice);
+  const price = parsed.price_suggested ?? 500;
 
   const handleConfirm = async () => {
     setIsConfirming(true);
@@ -34,66 +36,111 @@ export default function ConfirmScreen() {
     }
   };
 
-  const handleCancel = () => {
-    resetCreation();
-    router.replace('/(client)/');
-  };
+  const handleCancel = () => { resetCreation(); router.replace('/(client)/'); };
 
   return (
-    <SafeAreaView style={styles.safe}>
-      <ScrollView contentContainerStyle={styles.container}>
-        <Text style={styles.title}>Проверьте задание</Text>
+    <View style={styles.root}>
+      <StatusBar barStyle="light-content" />
+      <LinearGradient colors={GRADIENTS.bg} style={StyleSheet.absoluteFill} />
+      <View style={styles.glowAccent} />
 
-        <View style={styles.card}>
-          {parsed.category && <Row label="Категория" value={parsed.category} />}
-          <Row label="Что нужно" value={parsed.item_description ?? '—'} />
-          {parsed.from_location && <Row label="Откуда" value={parsed.from_location.address} />}
-          <Row label="Куда" value={parsed.to_location?.address ?? '—'} />
+      <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
+        {/* Back */}
+        <View style={styles.topBar}>
+          <TouchableOpacity onPress={handleCancel} style={styles.backBtn}>
+            <BlurView intensity={20} tint="dark" style={StyleSheet.absoluteFill} />
+            <View style={styles.backBtnBg} />
+            <Text style={styles.backIcon}>←</Text>
+          </TouchableOpacity>
         </View>
 
-        <View style={styles.priceCard}>
-          <Text style={styles.priceLabel}>Стоимость</Text>
-          <Text style={styles.priceValue}>{price} ₽</Text>
-          <Text style={styles.priceHint}>Рекомендовано AI</Text>
-        </View>
+        <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+          <Text style={styles.title}>Проверьте задание</Text>
+          <Text style={styles.subtitle}>Всё верно? Публикуем — исполнители увидят заказ</Text>
 
-        <Text style={styles.sectionTitle}>Способ оплаты</Text>
-        <View style={styles.paymentRow}>
-          {PAYMENT_METHODS.map((m) => (
-            <TouchableOpacity
-              key={m.key}
-              style={[styles.paymentBtn, paymentMethod === m.key && styles.paymentBtnActive]}
-              onPress={() => setPaymentMethod(m.key)}
-            >
-              <Text style={styles.paymentIcon}>{m.icon}</Text>
-              <Text style={[styles.paymentLabel, paymentMethod === m.key && styles.paymentLabelActive]}>
-                {m.label}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
+          {/* Task details card */}
+          <View style={styles.card}>
+            <BlurView intensity={18} tint="dark" style={StyleSheet.absoluteFill} />
+            <View style={styles.cardBg} />
+            <View style={{ position: 'relative', padding: 20 }}>
+              {parsed.category && <DetailRow label="📌 Категория"   value={parsed.category} />}
+              <DetailRow label="📦 Что нужно"   value={parsed.item_description ?? '—'} />
+              {parsed.from_location && <DetailRow label="🏪 Откуда"  value={parsed.from_location.address} />}
+              <DetailRow label="📍 Куда"         value={parsed.to_location?.address ?? '—'} last />
+            </View>
+          </View>
 
-        <TouchableOpacity
-          style={[styles.confirmBtn, isConfirming && styles.btnDisabled]}
-          onPress={handleConfirm}
-          disabled={isConfirming}
-        >
-          <Text style={styles.confirmBtnText}>
-            {isConfirming ? 'Публикуем...' : `Опубликовать за ${price} ₽`}
-          </Text>
-        </TouchableOpacity>
+          {/* Price hero */}
+          <View style={styles.priceCard}>
+            <BlurView intensity={25} tint="dark" style={StyleSheet.absoluteFill} />
+            <LinearGradient
+              colors={['rgba(139,92,246,0.35)', 'rgba(6,182,212,0.20)']}
+              start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
+              style={StyleSheet.absoluteFill}
+            />
+            <View style={styles.priceBorder} />
+            <View style={{ position: 'relative', padding: 20, alignItems: 'center' }}>
+              <Text style={styles.priceLabel}>Рекомендованная стоимость</Text>
+              <Text style={styles.priceValue}>{price} ₽</Text>
+              <View style={styles.aiPill}>
+                <Text style={styles.aiPillText}>✦ Рассчитано AI</Text>
+              </View>
+            </View>
+          </View>
 
-        <TouchableOpacity onPress={handleCancel} style={styles.cancelBtn}>
-          <Text style={styles.cancelText}>Отмена</Text>
-        </TouchableOpacity>
-      </ScrollView>
-    </SafeAreaView>
+          {/* Payment method */}
+          <Text style={styles.sectionTitle}>Способ оплаты</Text>
+          <View style={styles.paymentRow}>
+            {PAYMENT_METHODS.map((m) => (
+              <TouchableOpacity
+                key={m.key}
+                style={styles.paymentBtn}
+                onPress={() => setPaymentMethod(m.key)}
+                activeOpacity={0.8}
+              >
+                <BlurView intensity={18} tint="dark" style={StyleSheet.absoluteFill} />
+                <View style={[
+                  styles.paymentBg,
+                  paymentMethod === m.key && { backgroundColor: COLORS.glassViolet, borderColor: COLORS.primary + '60' },
+                ]} />
+                {paymentMethod === m.key && (
+                  <LinearGradient colors={GRADIENTS.primary} style={styles.paymentActiveGlow} />
+                )}
+                <Text style={styles.paymentIcon}>{m.icon}</Text>
+                <Text style={[styles.paymentLabel, paymentMethod === m.key && { color: COLORS.primaryLight, fontWeight: '700' }]}>
+                  {m.label}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+
+          {/* Confirm button */}
+          <TouchableOpacity
+            style={[styles.confirmBtn, isConfirming && { opacity: 0.5 }]}
+            onPress={handleConfirm}
+            disabled={isConfirming}
+            activeOpacity={0.85}
+          >
+            <LinearGradient colors={GRADIENTS.primary} style={StyleSheet.absoluteFill} />
+            <Text style={styles.confirmText}>
+              {isConfirming ? 'Публикуем...' : `Опубликовать за ${price} ₽`}
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity onPress={handleCancel} style={styles.cancelBtn}>
+            <Text style={styles.cancelText}>Отмена</Text>
+          </TouchableOpacity>
+
+          <View style={{ height: 40 }} />
+        </ScrollView>
+      </SafeAreaView>
+    </View>
   );
 }
 
-function Row({ label, value }: { label: string; value: string }) {
+function DetailRow({ label, value, last }: { label: string; value: string; last?: boolean }) {
   return (
-    <View style={styles.row}>
+    <View style={[styles.row, !last && styles.rowDivider]}>
       <Text style={styles.rowLabel}>{label}</Text>
       <Text style={styles.rowValue}>{value}</Text>
     </View>
@@ -101,41 +148,54 @@ function Row({ label, value }: { label: string; value: string }) {
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: COLORS.bg },
-  container: { padding: 24 },
-  title: { fontSize: 24, fontWeight: '700', color: COLORS.text, marginBottom: 20 },
-  card: {
-    backgroundColor: COLORS.card, borderRadius: 16,
-    padding: 16, marginBottom: 16,
-    borderWidth: 1, borderColor: COLORS.border,
+  root: { flex: 1, backgroundColor: COLORS.bg },
+  safe: { flex: 1 },
+  glowAccent: {
+    position: 'absolute', top: '20%', right: -40,
+    width: 200, height: 200, borderRadius: 100,
+    backgroundColor: 'rgba(139,92,246,0.15)',
   },
-  row: { flexDirection: 'row', paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: COLORS.border },
-  rowLabel: { flex: 1, fontSize: 14, color: COLORS.textMuted },
-  rowValue: { flex: 2, fontSize: 14, fontWeight: '500', color: COLORS.text },
-  priceCard: {
-    backgroundColor: COLORS.primary + '15', borderRadius: 16,
-    padding: 20, marginBottom: 20, alignItems: 'center',
-    borderWidth: 1.5, borderColor: COLORS.primary,
+
+  topBar:    { paddingHorizontal: 20, paddingTop: 8 },
+  backBtn:   { width: 38, height: 38, borderRadius: 19, overflow: 'hidden', alignItems: 'center', justifyContent: 'center' },
+  backBtnBg: { ...StyleSheet.absoluteFillObject, backgroundColor: COLORS.glass, borderRadius: 19, borderWidth: 1, borderColor: COLORS.glassBorder },
+  backIcon:  { color: COLORS.text, fontSize: 18, position: 'relative' },
+
+  scroll: { paddingHorizontal: 20, paddingTop: 8 },
+
+  title:    { fontSize: 26, fontWeight: '800', color: COLORS.text, marginBottom: 6 },
+  subtitle: { fontSize: 15, color: COLORS.textMuted, marginBottom: 20, lineHeight: 22 },
+
+  card:   { borderRadius: RADIUS.xl, overflow: 'hidden', marginBottom: 16 },
+  cardBg: { ...StyleSheet.absoluteFillObject, backgroundColor: COLORS.glass, borderRadius: RADIUS.xl, borderWidth: 1, borderColor: COLORS.glassBorder },
+
+  row:        { flexDirection: 'row', paddingVertical: 10 },
+  rowDivider: { borderBottomWidth: 1, borderBottomColor: COLORS.divider },
+  rowLabel:   { flex: 1, fontSize: 14, color: COLORS.textMuted },
+  rowValue:   { flex: 2, fontSize: 14, fontWeight: '500', color: COLORS.text },
+
+  priceCard:   { borderRadius: RADIUS.xxl, overflow: 'hidden', marginBottom: 20 },
+  priceBorder: { ...StyleSheet.absoluteFillObject, borderRadius: RADIUS.xxl, borderWidth: 1, borderColor: COLORS.glassBorder },
+  priceLabel:  { fontSize: 13, color: COLORS.textMuted, marginBottom: 4 },
+  priceValue:  { fontSize: 44, fontWeight: '800', color: COLORS.text, marginBottom: 8 },
+  aiPill: {
+    backgroundColor: COLORS.glassViolet, borderRadius: RADIUS.full,
+    paddingHorizontal: 12, paddingVertical: 4,
+    borderWidth: 1, borderColor: COLORS.primary + '40',
   },
-  priceLabel: { fontSize: 14, color: COLORS.primary, marginBottom: 4 },
-  priceValue: { fontSize: 36, fontWeight: '800', color: COLORS.primary },
-  priceHint: { fontSize: 12, color: COLORS.textMuted, marginTop: 4 },
-  sectionTitle: { fontSize: 15, fontWeight: '600', color: COLORS.text, marginBottom: 12 },
-  paymentRow: { flexDirection: 'row', gap: 12, marginBottom: 24 },
-  paymentBtn: {
-    flex: 1, borderRadius: 12, padding: 14, alignItems: 'center',
-    backgroundColor: COLORS.card, borderWidth: 1.5, borderColor: COLORS.border,
-  },
-  paymentBtnActive: { borderColor: COLORS.primary, backgroundColor: COLORS.primary + '10' },
-  paymentIcon: { fontSize: 24, marginBottom: 4 },
-  paymentLabel: { fontSize: 14, color: COLORS.text },
-  paymentLabelActive: { color: COLORS.primary, fontWeight: '600' },
-  confirmBtn: {
-    backgroundColor: COLORS.primary, borderRadius: 12,
-    padding: 16, alignItems: 'center', marginBottom: 12,
-  },
-  btnDisabled: { opacity: 0.5 },
-  confirmBtnText: { color: '#fff', fontSize: 16, fontWeight: '700' },
-  cancelBtn: { padding: 16, alignItems: 'center' },
+  aiPillText: { fontSize: 12, color: COLORS.primaryLight, fontWeight: '600' },
+
+  sectionTitle: { fontSize: 15, fontWeight: '700', color: COLORS.text, marginBottom: 12 },
+  paymentRow:   { flexDirection: 'row', gap: 12, marginBottom: 24 },
+  paymentBtn:   { flex: 1, borderRadius: RADIUS.xl, overflow: 'hidden', paddingVertical: 16, alignItems: 'center' },
+  paymentBg:    { ...StyleSheet.absoluteFillObject, backgroundColor: COLORS.glass, borderRadius: RADIUS.xl, borderWidth: 1, borderColor: COLORS.glassBorder },
+  paymentActiveGlow: { ...StyleSheet.absoluteFillObject, opacity: 0.08 },
+  paymentIcon:  { fontSize: 26, marginBottom: 4, position: 'relative' },
+  paymentLabel: { fontSize: 14, color: COLORS.text, position: 'relative' },
+
+  confirmBtn:  { borderRadius: RADIUS.xl, overflow: 'hidden', paddingVertical: 16, alignItems: 'center', marginBottom: 12 },
+  confirmText: { fontSize: 16, fontWeight: '700', color: '#fff', position: 'relative' },
+
+  cancelBtn:  { paddingVertical: 14, alignItems: 'center' },
   cancelText: { color: COLORS.textMuted, fontSize: 15 },
 });

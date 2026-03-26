@@ -1,16 +1,19 @@
 import { useEffect, useState } from 'react';
-import { View, Text, FlatList, TouchableOpacity, StyleSheet, SafeAreaView, ActivityIndicator, RefreshControl } from 'react-native';
+import { View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator, RefreshControl, StatusBar } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import * as Location from 'expo-location';
+import { LinearGradient } from 'expo-linear-gradient';
+import { BlurView } from 'expo-blur';
 import { useTaskStore } from '../../src/stores/taskStore';
 import { getSocket } from '../../src/services/socket';
 import { useAuthStore } from '../../src/stores/authStore';
-import { COLORS, SHADOW, TASK_STATE_COLORS, TASK_STATE_LABELS } from '../../src/constants/config';
+import { COLORS, RADIUS, GRADIENTS, TASK_STATE_COLORS, TASK_STATE_LABELS } from '../../src/constants/config';
 import type { Task } from '../../src/services/api';
 
 const CATEGORIES: Record<string, string> = {
-  buy_deliver: 'Купи-привези',
-  pickup_drop: 'Забери-отвези',
+  buy_deliver:   'Купи-привези',
+  pickup_drop:   'Забери-отвези',
   simple_errand: 'Поручение',
 };
 
@@ -37,125 +40,179 @@ export default function ExecutorOrdersScreen() {
     fetchFeed();
     if (token) {
       const socket = getSocket(token);
-      socket.on('task_feed_new', fetchFeed);
+      socket.on('task_feed_new',     fetchFeed);
       socket.on('task_feed_removed', fetchFeed);
       return () => { socket.off('task_feed_new', fetchFeed); socket.off('task_feed_removed', fetchFeed); };
     }
   }, [token]);
 
   const activeOrders = myTasks.filter(t => ['accepted', 'in_progress', 'pending_client'].includes(t.state));
+  const data    = tab === 'feed' ? feed : activeOrders;
+  const isEmpty = data.length === 0 && !isFeedLoading;
 
   const renderFeedItem = ({ item }: { item: Task }) => (
     <TouchableOpacity
-      style={[styles.card, SHADOW.sm]}
+      style={styles.card}
       onPress={() => router.push({ pathname: '/(executor)/task/[id]', params: { id: item.id } })}
+      activeOpacity={0.85}
     >
-      <View style={styles.cardHeader}>
-        <View style={styles.cardHeaderLeft}>
-          <Text style={styles.cardTitle} numberOfLines={2}>{item.item_description ?? 'Заказ'}</Text>
-          <Text style={styles.cardAddr} numberOfLines={1}>📍 {item.to_location?.address ?? '—'}</Text>
-          {item.from_location && <Text style={styles.cardFrom} numberOfLines={1}>🏪 {item.from_location.address}</Text>}
-        </View>
-        <View style={styles.cardRight}>
-          <Text style={styles.cardPrice}>{item.price_final} ₽</Text>
-          <View style={styles.categoryPill}>
-            <Text style={styles.categoryText}>{CATEGORIES[item.category ?? ''] ?? item.category}</Text>
+      <BlurView intensity={18} tint="dark" style={StyleSheet.absoluteFill} />
+      <View style={styles.cardBg} />
+      {/* Cyan left accent */}
+      <View style={styles.cardAccent} />
+      <View style={{ position: 'relative', padding: 16 }}>
+        <View style={styles.cardHeader}>
+          <View style={styles.cardLeft}>
+            <Text style={styles.cardTitle} numberOfLines={2}>{item.item_description ?? 'Заказ'}</Text>
+            <Text style={styles.cardAddr} numberOfLines={1}>📍 {item.to_location?.address ?? '—'}</Text>
+            {item.from_location && <Text style={styles.cardFrom} numberOfLines={1}>🏪 {item.from_location.address}</Text>}
+          </View>
+          <View style={styles.cardRight}>
+            <Text style={styles.cardPrice}>{item.price_final} ₽</Text>
+            <View style={styles.categoryPill}>
+              <Text style={styles.categoryText}>{CATEGORIES[item.category ?? ''] ?? item.category}</Text>
+            </View>
           </View>
         </View>
       </View>
     </TouchableOpacity>
   );
 
-  const renderMyItem = ({ item }: { item: Task }) => (
-    <TouchableOpacity
-      style={[styles.card, SHADOW.sm]}
-      onPress={() => router.push({ pathname: '/(executor)/task/[id]', params: { id: item.id } })}
-    >
-      <View style={styles.cardHeader}>
-        <View style={styles.cardHeaderLeft}>
-          <Text style={styles.cardTitle} numberOfLines={2}>{item.item_description ?? 'Заказ'}</Text>
-          <Text style={styles.cardAddr} numberOfLines={1}>📍 {item.to_location?.address ?? '—'}</Text>
-        </View>
-        <View style={styles.cardRight}>
-          <Text style={styles.cardPrice}>{item.price_final ?? '—'} ₽</Text>
-          <View style={[styles.stateBadge, { backgroundColor: TASK_STATE_COLORS[item.state] + '20' }]}>
-            <Text style={[styles.stateBadgeText, { color: TASK_STATE_COLORS[item.state] }]}>{TASK_STATE_LABELS[item.state]}</Text>
+  const renderMyItem = ({ item }: { item: Task }) => {
+    const stateColor = TASK_STATE_COLORS[item.state] ?? COLORS.executor;
+    return (
+      <TouchableOpacity
+        style={styles.card}
+        onPress={() => router.push({ pathname: '/(executor)/task/[id]', params: { id: item.id } })}
+        activeOpacity={0.85}
+      >
+        <BlurView intensity={18} tint="dark" style={StyleSheet.absoluteFill} />
+        <View style={styles.cardBg} />
+        <View style={[styles.cardAccent, { backgroundColor: stateColor }]} />
+        <View style={{ position: 'relative', padding: 16 }}>
+          <View style={styles.cardHeader}>
+            <View style={styles.cardLeft}>
+              <Text style={styles.cardTitle} numberOfLines={2}>{item.item_description ?? 'Заказ'}</Text>
+              <Text style={styles.cardAddr} numberOfLines={1}>📍 {item.to_location?.address ?? '—'}</Text>
+            </View>
+            <View style={styles.cardRight}>
+              <Text style={[styles.cardPrice, { color: stateColor }]}>{item.price_final ?? '—'} ₽</Text>
+              <View style={[styles.stateBadge, { backgroundColor: stateColor + '20', borderColor: stateColor + '40' }]}>
+                <Text style={[styles.stateBadgeText, { color: stateColor }]}>{TASK_STATE_LABELS[item.state]}</Text>
+              </View>
+            </View>
           </View>
         </View>
-      </View>
-    </TouchableOpacity>
-  );
-
-  const data = tab === 'feed' ? feed : activeOrders;
-  const isEmpty = data.length === 0 && !isFeedLoading;
+      </TouchableOpacity>
+    );
+  };
 
   return (
-    <SafeAreaView style={styles.safe}>
-      <View style={styles.header}>
-        <Text style={styles.title}>Заказы</Text>
-        <View style={styles.countBadge}>
-          <Text style={styles.countText}>{data.length}</Text>
+    <View style={styles.root}>
+      <StatusBar barStyle="light-content" />
+      <LinearGradient colors={GRADIENTS.bg} style={StyleSheet.absoluteFill} />
+      <View style={styles.glowTop} />
+
+      <SafeAreaView style={styles.safe} edges={['top']}>
+        {/* Header */}
+        <View style={styles.header}>
+          <Text style={styles.title}>Заказы</Text>
+          <View style={styles.countBadge}>
+            <LinearGradient colors={GRADIENTS.executor} style={StyleSheet.absoluteFill} />
+            <Text style={styles.countText}>{data.length}</Text>
+          </View>
         </View>
-      </View>
 
-      {/* Tabs */}
-      <View style={styles.tabs}>
-        <TouchableOpacity style={[styles.tabBtn, tab === 'feed' && styles.tabBtnActive]} onPress={() => setTab('feed')}>
-          <Text style={[styles.tabBtnText, tab === 'feed' && styles.tabBtnTextActive]}>Новые</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={[styles.tabBtn, tab === 'mine' && styles.tabBtnActive]} onPress={() => setTab('mine')}>
-          <Text style={[styles.tabBtnText, tab === 'mine' && styles.tabBtnTextActive]}>
-            Мои {activeOrders.length > 0 ? `(${activeOrders.length})` : ''}
-          </Text>
-        </TouchableOpacity>
-      </View>
+        {/* Tabs */}
+        <View style={styles.tabsWrap}>
+          <BlurView intensity={20} tint="dark" style={StyleSheet.absoluteFill} />
+          <View style={styles.tabsBg} />
+          <View style={{ position: 'relative', flexDirection: 'row', padding: 4 }}>
+            {(['feed', 'mine'] as const).map((t) => (
+              <TouchableOpacity
+                key={t}
+                style={[styles.tabBtn, tab === t && styles.tabBtnActive]}
+                onPress={() => setTab(t)}
+                activeOpacity={0.8}
+              >
+                {tab === t && <LinearGradient colors={GRADIENTS.executor} style={StyleSheet.absoluteFill} />}
+                <Text style={[styles.tabText, tab === t && styles.tabTextActive]}>
+                  {t === 'feed' ? 'Новые' : `Мои${activeOrders.length > 0 ? ` (${activeOrders.length})` : ''}`}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </View>
 
-      {isFeedLoading && data.length === 0 ? (
-        <ActivityIndicator size="large" color={COLORS.primary} style={{ marginTop: 60 }} />
-      ) : (
-        <FlatList
-          data={data}
-          keyExtractor={t => t.id}
-          renderItem={tab === 'feed' ? renderFeedItem : renderMyItem}
-          contentContainerStyle={styles.list}
-          refreshControl={<RefreshControl refreshing={isFeedLoading} onRefresh={fetchFeed} />}
-          ListEmptyComponent={isEmpty ? (
-            <View style={styles.empty}>
-              <Text style={styles.emptyIcon}>{tab === 'feed' ? '🔍' : '📋'}</Text>
-              <Text style={styles.emptyText}>{tab === 'feed' ? 'Заказов рядом нет' : 'Нет активных заказов'}</Text>
-            </View>
-          ) : null}
-        />
-      )}
-    </SafeAreaView>
+        {isFeedLoading && data.length === 0 ? (
+          <ActivityIndicator size="large" color={COLORS.executor} style={{ marginTop: 60 }} />
+        ) : (
+          <FlatList
+            data={data}
+            keyExtractor={t => t.id}
+            renderItem={tab === 'feed' ? renderFeedItem : renderMyItem}
+            contentContainerStyle={styles.list}
+            showsVerticalScrollIndicator={false}
+            refreshControl={
+              <RefreshControl refreshing={isFeedLoading} onRefresh={fetchFeed} tintColor={COLORS.executor} />
+            }
+            ListEmptyComponent={isEmpty ? (
+              <View style={styles.empty}>
+                <Text style={styles.emptyIcon}>{tab === 'feed' ? '🔍' : '📋'}</Text>
+                <Text style={styles.emptyText}>{tab === 'feed' ? 'Заказов рядом нет' : 'Нет активных заказов'}</Text>
+                <Text style={styles.emptyHint}>{tab === 'feed' ? 'Попробуйте позже или расширьте зону' : 'Примите заказ во вкладке Новые'}</Text>
+              </View>
+            ) : null}
+          />
+        )}
+      </SafeAreaView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: COLORS.bg },
-  header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingTop: 4, paddingBottom: 12 },
-  title: { flex: 1, fontSize: 22, fontWeight: '700', color: COLORS.text },
-  countBadge: { backgroundColor: COLORS.primary, borderRadius: 12, paddingHorizontal: 10, paddingVertical: 4 },
-  countText: { color: '#fff', fontSize: 14, fontWeight: '700' },
-  tabs: { flexDirection: 'row', marginHorizontal: 20, backgroundColor: COLORS.card, borderRadius: 12, padding: 4, marginBottom: 12 },
-  tabBtn: { flex: 1, paddingVertical: 10, alignItems: 'center', borderRadius: 10 },
-  tabBtnActive: { backgroundColor: COLORS.primary },
-  tabBtnText: { fontSize: 14, fontWeight: '600', color: COLORS.textMuted },
-  tabBtnTextActive: { color: '#fff' },
-  list: { paddingHorizontal: 20, paddingBottom: 90 },
-  card: { backgroundColor: COLORS.card, borderRadius: 16, padding: 16, marginBottom: 10 },
+  root: { flex: 1, backgroundColor: COLORS.bg },
+  safe: { flex: 1 },
+  glowTop: {
+    position: 'absolute', top: -60, right: -40,
+    width: 200, height: 200, borderRadius: 100,
+    backgroundColor: 'rgba(6,182,212,0.12)',
+  },
+
+  header:     { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingTop: 8, paddingBottom: 12 },
+  title:      { flex: 1, fontSize: 24, fontWeight: '800', color: COLORS.text },
+  countBadge: { borderRadius: RADIUS.full, overflow: 'hidden', paddingHorizontal: 12, paddingVertical: 5, minWidth: 34, alignItems: 'center' },
+  countText:  { color: '#fff', fontSize: 14, fontWeight: '700', position: 'relative' },
+
+  tabsWrap: { marginHorizontal: 20, borderRadius: RADIUS.lg, overflow: 'hidden', marginBottom: 12 },
+  tabsBg:   { ...StyleSheet.absoluteFillObject, backgroundColor: COLORS.glass, borderRadius: RADIUS.lg, borderWidth: 1, borderColor: COLORS.glassBorder },
+  tabBtn:   { flex: 1, paddingVertical: 11, alignItems: 'center', borderRadius: RADIUS.md, overflow: 'hidden' },
+  tabBtnActive: {},
+  tabText:      { fontSize: 14, fontWeight: '600', color: COLORS.textMuted, position: 'relative' },
+  tabTextActive:{ color: '#fff' },
+
+  list: { paddingHorizontal: 16, paddingBottom: 100 },
+
+  card:     { borderRadius: RADIUS.xl, overflow: 'hidden', marginBottom: 10 },
+  cardBg:   { ...StyleSheet.absoluteFillObject, backgroundColor: COLORS.glass, borderRadius: RADIUS.xl, borderWidth: 1, borderColor: COLORS.glassBorder },
+  cardAccent: { position: 'absolute', left: 0, top: 16, bottom: 16, width: 3, borderRadius: 2, backgroundColor: COLORS.executor },
+
   cardHeader: { flexDirection: 'row', alignItems: 'flex-start' },
-  cardHeaderLeft: { flex: 1, marginRight: 12 },
-  cardRight: { alignItems: 'flex-end' },
-  cardTitle: { fontSize: 15, fontWeight: '600', color: COLORS.text, marginBottom: 4 },
-  cardAddr: { fontSize: 12, color: COLORS.textMuted, marginBottom: 2 },
-  cardFrom: { fontSize: 12, color: COLORS.textMuted },
-  cardPrice: { fontSize: 17, fontWeight: '800', color: COLORS.primary, marginBottom: 6 },
-  categoryPill: { backgroundColor: COLORS.primaryLight, borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3 },
-  categoryText: { fontSize: 11, color: COLORS.primary, fontWeight: '600' },
-  stateBadge: { borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3 },
+  cardLeft:   { flex: 1, marginRight: 12 },
+  cardRight:  { alignItems: 'flex-end' },
+  cardTitle:  { fontSize: 15, fontWeight: '600', color: COLORS.text, marginBottom: 4 },
+  cardAddr:   { fontSize: 12, color: COLORS.textMuted, marginBottom: 2 },
+  cardFrom:   { fontSize: 12, color: COLORS.textMuted },
+  cardPrice:  { fontSize: 18, fontWeight: '800', color: COLORS.executor, marginBottom: 6 },
+
+  categoryPill: { backgroundColor: 'rgba(6,182,212,0.12)', borderRadius: RADIUS.sm, paddingHorizontal: 8, paddingVertical: 3, borderWidth: 1, borderColor: COLORS.executor + '30' },
+  categoryText: { fontSize: 11, color: COLORS.executorLight, fontWeight: '600' },
+
+  stateBadge:     { borderRadius: RADIUS.sm, paddingHorizontal: 8, paddingVertical: 3, borderWidth: 1 },
   stateBadgeText: { fontSize: 11, fontWeight: '600' },
-  empty: { alignItems: 'center', paddingTop: 80 },
+
+  empty:     { alignItems: 'center', paddingTop: 80 },
   emptyIcon: { fontSize: 48, marginBottom: 16 },
-  emptyText: { fontSize: 16, fontWeight: '600', color: COLORS.text },
+  emptyText: { fontSize: 16, fontWeight: '700', color: COLORS.text, marginBottom: 8 },
+  emptyHint: { fontSize: 14, color: COLORS.textMuted },
 });
