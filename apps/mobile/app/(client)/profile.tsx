@@ -1,7 +1,10 @@
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, SafeAreaView, Alert } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, StatusBar, Alert } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { LinearGradient } from 'expo-linear-gradient';
+import { BlurView } from 'expo-blur';
 import { useAuthStore } from '../../src/stores/authStore';
 import { useTaskStore } from '../../src/stores/taskStore';
-import { COLORS, SHADOW } from '../../src/constants/config';
+import { COLORS, RADIUS, GRADIENTS } from '../../src/constants/config';
 import { useEffect } from 'react';
 
 export default function ClientProfileScreen() {
@@ -11,15 +14,15 @@ export default function ClientProfileScreen() {
   useEffect(() => { loadMyTasks(); }, []);
 
   const completed = myTasks.filter(t => t.state === 'completed' || t.state === 'rated').length;
-  const active = myTasks.filter(t => ['published', 'accepted', 'in_progress'].includes(t.state)).length;
+  const active    = myTasks.filter(t => ['published', 'accepted', 'in_progress'].includes(t.state)).length;
 
   const menuItems = [
-    { icon: '📝', label: 'Редактировать профиль', action: () => {} },
-    { icon: '🔔', label: 'Уведомления', action: () => {} },
-    { icon: '📍', label: 'Мои адреса', action: () => {} },
-    { icon: '💬', label: 'Поддержка', action: () => {} },
-    { icon: '📜', label: 'История заказов', action: () => {} },
-    { icon: '❓', label: 'Помощь', action: () => {} },
+    { icon: '📝', label: 'Редактировать профиль' },
+    { icon: '🔔', label: 'Уведомления' },
+    { icon: '📍', label: 'Мои адреса' },
+    { icon: '💬', label: 'Поддержка' },
+    { icon: '📜', label: 'История заказов' },
+    { icon: '❓', label: 'Помощь' },
   ];
 
   const handleLogout = () => {
@@ -30,83 +33,128 @@ export default function ClientProfileScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.safe}>
-      <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
-        <View style={styles.header}>
-          <Text style={styles.title}>Профиль</Text>
-        </View>
+    <View style={styles.root}>
+      <StatusBar barStyle="light-content" />
+      <LinearGradient colors={GRADIENTS.bg} style={StyleSheet.absoluteFill} />
+      <View style={styles.glowTop} />
 
-        {/* Profile card */}
-        <View style={[styles.profileCard, SHADOW.md]}>
-          <View style={styles.avatar}>
-            <Text style={styles.avatarText}>{user?.name?.[0]?.toUpperCase() ?? '?'}</Text>
-          </View>
-          <Text style={styles.profileName}>{user?.name ?? '—'}</Text>
-          <View style={styles.roleBadge}>
-            <Text style={styles.roleText}>Клиент</Text>
-          </View>
-          <Text style={styles.profilePhone}>{user?.phone ?? '—'}</Text>
-        </View>
+      <SafeAreaView style={styles.safe} edges={['top']}>
+        <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
 
-        {/* Stats */}
-        <View style={styles.statsRow}>
-          <View style={[styles.statCard, SHADOW.sm]}>
-            <Text style={styles.statValue}>{myTasks.length}</Text>
-            <Text style={styles.statLabel}>Всего заказов</Text>
+          {/* ── Avatar hero ────────────────────── */}
+          <View style={styles.heroSection}>
+            <View style={styles.avatarRing}>
+              <LinearGradient colors={GRADIENTS.primary} style={StyleSheet.absoluteFill} />
+              <View style={styles.avatarInner}>
+                <Text style={styles.avatarText}>{user?.name?.[0]?.toUpperCase() ?? '?'}</Text>
+              </View>
+            </View>
+            <Text style={styles.profileName}>{user?.name ?? '—'}</Text>
+            <View style={styles.roleBadge}>
+              <Text style={styles.roleText}>✦ Клиент</Text>
+            </View>
+            <Text style={styles.profilePhone}>{user?.phone ?? '—'}</Text>
           </View>
-          <View style={[styles.statCard, SHADOW.sm]}>
-            <Text style={[styles.statValue, { color: COLORS.success }]}>{completed}</Text>
-            <Text style={styles.statLabel}>Выполнено</Text>
+
+          {/* ── Stats bento ────────────────────── */}
+          <View style={styles.statsRow}>
+            {[
+              { value: myTasks.length, label: 'Всего',     color: COLORS.text },
+              { value: completed,      label: 'Выполнено', color: COLORS.success },
+              { value: active,         label: 'Активных',  color: COLORS.primary },
+            ].map(({ value, label, color }) => (
+              <View key={label} style={styles.statCard}>
+                <BlurView intensity={20} tint="dark" style={StyleSheet.absoluteFill} />
+                <View style={styles.statBg} />
+                <View style={{ position: 'relative', alignItems: 'center' }}>
+                  <Text style={[styles.statValue, { color }]}>{value}</Text>
+                  <Text style={styles.statLabel}>{label}</Text>
+                </View>
+              </View>
+            ))}
           </View>
-          <View style={[styles.statCard, SHADOW.sm]}>
-            <Text style={[styles.statValue, { color: COLORS.primary }]}>{active}</Text>
-            <Text style={styles.statLabel}>Активных</Text>
+
+          {/* ── Menu ───────────────────────────── */}
+          <View style={styles.menuCard}>
+            <BlurView intensity={20} tint="dark" style={StyleSheet.absoluteFill} />
+            <View style={styles.menuBg} />
+            <View style={{ position: 'relative' }}>
+              {menuItems.map((item, i) => (
+                <TouchableOpacity
+                  key={item.label}
+                  style={[styles.menuItem, i < menuItems.length - 1 && styles.menuDivider]}
+                  activeOpacity={0.7}
+                >
+                  <Text style={styles.menuIcon}>{item.icon}</Text>
+                  <Text style={styles.menuLabel}>{item.label}</Text>
+                  <Text style={styles.menuChevron}>›</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
           </View>
-        </View>
 
-        {/* Menu */}
-        <View style={[styles.menuCard, SHADOW.sm]}>
-          {menuItems.map((item, i) => (
-            <TouchableOpacity key={item.label} style={[styles.menuItem, i < menuItems.length - 1 && styles.menuDivider]} onPress={item.action}>
-              <Text style={styles.menuIcon}>{item.icon}</Text>
-              <Text style={styles.menuLabel}>{item.label}</Text>
-              <Text style={styles.menuChevron}>›</Text>
-            </TouchableOpacity>
-          ))}
-        </View>
+          {/* ── Logout ─────────────────────────── */}
+          <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout} activeOpacity={0.8}>
+            <BlurView intensity={20} tint="dark" style={StyleSheet.absoluteFill} />
+            <View style={styles.logoutBg} />
+            <Text style={styles.logoutText}>Выйти из аккаунта</Text>
+          </TouchableOpacity>
 
-        <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout}>
-          <Text style={styles.logoutText}>Выйти из аккаунта</Text>
-        </TouchableOpacity>
-
-        <View style={{ height: 90 }} />
-      </ScrollView>
-    </SafeAreaView>
+          <View style={{ height: 100 }} />
+        </ScrollView>
+      </SafeAreaView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: COLORS.bg },
-  scroll: { padding: 20 },
-  header: { marginBottom: 20 },
-  title: { fontSize: 22, fontWeight: '700', color: COLORS.text },
-  profileCard: { backgroundColor: COLORS.card, borderRadius: 20, padding: 24, alignItems: 'center', marginBottom: 16 },
-  avatar: { width: 80, height: 80, borderRadius: 40, backgroundColor: COLORS.primary, alignItems: 'center', justifyContent: 'center', marginBottom: 12 },
-  avatarText: { fontSize: 32, fontWeight: '700', color: '#fff' },
-  profileName: { fontSize: 20, fontWeight: '700', color: COLORS.text, marginBottom: 6 },
-  roleBadge: { backgroundColor: COLORS.primaryLight, borderRadius: 10, paddingHorizontal: 14, paddingVertical: 4, marginBottom: 8 },
-  roleText: { color: COLORS.primary, fontWeight: '600', fontSize: 13 },
+  root:  { flex: 1, backgroundColor: COLORS.bg },
+  safe:  { flex: 1 },
+  scroll:{ paddingHorizontal: 20 },
+
+  glowTop: {
+    position: 'absolute', top: -80, left: '30%',
+    width: 200, height: 200, borderRadius: 100,
+    backgroundColor: 'rgba(139,92,246,0.20)',
+  },
+
+  heroSection: { alignItems: 'center', paddingTop: 16, paddingBottom: 28 },
+  avatarRing:  {
+    width: 92, height: 92, borderRadius: 46,
+    alignItems: 'center', justifyContent: 'center',
+    marginBottom: 14, padding: 2,
+  },
+  avatarInner: {
+    width: 86, height: 86, borderRadius: 43,
+    backgroundColor: COLORS.bgLayer,
+    alignItems: 'center', justifyContent: 'center',
+    borderWidth: 1, borderColor: COLORS.glassBorder,
+  },
+  avatarText:   { fontSize: 34, fontWeight: '800', color: COLORS.text },
+  profileName:  { fontSize: 22, fontWeight: '800', color: COLORS.text, marginBottom: 8 },
+  roleBadge:    {
+    backgroundColor: COLORS.glassViolet, borderRadius: RADIUS.full,
+    paddingHorizontal: 14, paddingVertical: 5, marginBottom: 8,
+    borderWidth: 1, borderColor: COLORS.primary + '40',
+  },
+  roleText:     { color: COLORS.primary, fontWeight: '700', fontSize: 13 },
   profilePhone: { fontSize: 14, color: COLORS.textMuted },
-  statsRow: { flexDirection: 'row', gap: 12, marginBottom: 16 },
-  statCard: { flex: 1, backgroundColor: COLORS.card, borderRadius: 16, padding: 14, alignItems: 'center' },
-  statValue: { fontSize: 20, fontWeight: '800', color: COLORS.primary, marginBottom: 4 },
-  statLabel: { fontSize: 11, color: COLORS.textMuted, fontWeight: '500', textAlign: 'center' },
-  menuCard: { backgroundColor: COLORS.card, borderRadius: 20, marginBottom: 16, overflow: 'hidden' },
-  menuItem: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 16 },
-  menuDivider: { borderBottomWidth: 1, borderBottomColor: COLORS.divider },
-  menuIcon: { fontSize: 20, marginRight: 14 },
-  menuLabel: { flex: 1, fontSize: 15, color: COLORS.text, fontWeight: '500' },
-  menuChevron: { fontSize: 22, color: COLORS.textMuted },
-  logoutBtn: { backgroundColor: COLORS.dangerLight, borderRadius: 16, padding: 16, alignItems: 'center' },
-  logoutText: { color: COLORS.danger, fontWeight: '700', fontSize: 16 },
+
+  statsRow: { flexDirection: 'row', gap: 10, marginBottom: 16 },
+  statCard: { flex: 1, borderRadius: RADIUS.lg, overflow: 'hidden', paddingVertical: 16, alignItems: 'center' },
+  statBg:   { ...StyleSheet.absoluteFillObject, backgroundColor: COLORS.glass, borderRadius: RADIUS.lg, borderWidth: 1, borderColor: COLORS.glassBorder },
+  statValue:{ fontSize: 22, fontWeight: '800', marginBottom: 2 },
+  statLabel:{ fontSize: 10, color: COLORS.textMuted, fontWeight: '600', textTransform: 'uppercase' },
+
+  menuCard:   { borderRadius: RADIUS.xl, overflow: 'hidden', marginBottom: 12 },
+  menuBg:     { ...StyleSheet.absoluteFillObject, backgroundColor: COLORS.glass, borderRadius: RADIUS.xl, borderWidth: 1, borderColor: COLORS.glassBorder },
+  menuItem:   { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 16 },
+  menuDivider:{ borderBottomWidth: 1, borderBottomColor: COLORS.divider },
+  menuIcon:   { fontSize: 20, marginRight: 14 },
+  menuLabel:  { flex: 1, fontSize: 15, color: COLORS.text, fontWeight: '500' },
+  menuChevron:{ fontSize: 22, color: COLORS.textMuted },
+
+  logoutBtn:  { borderRadius: RADIUS.xl, overflow: 'hidden', alignItems: 'center', paddingVertical: 16 },
+  logoutBg:   { ...StyleSheet.absoluteFillObject, backgroundColor: COLORS.dangerGlow, borderRadius: RADIUS.xl, borderWidth: 1, borderColor: COLORS.danger + '40' },
+  logoutText: { color: COLORS.danger, fontWeight: '700', fontSize: 16, position: 'relative' },
 });
