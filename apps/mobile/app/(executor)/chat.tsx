@@ -1,15 +1,18 @@
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, StatusBar } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
 import { useTaskStore } from '../../src/stores/taskStore';
-import { COLORS, RADIUS, GRADIENTS, TASK_STATE_COLORS, TASK_STATE_LABELS } from '../../src/constants/config';
+import { RADIUS, TASK_STATE_COLORS, TASK_STATE_LABELS, type AppColors } from '../../src/constants/config';
+import { useAppTheme } from '../../src/hooks/useAppTheme';
 
 export default function ExecutorChatScreen() {
   const router = useRouter();
   const { myTasks, loadMyTasks } = useTaskStore();
+  const { COLORS, GRADIENTS, isDark, blurTint } = useAppTheme();
+  const styles = useMemo(() => makeStyles(COLORS), [COLORS]);
 
   useEffect(() => { loadMyTasks(); }, []);
 
@@ -26,7 +29,7 @@ export default function ExecutorChatScreen() {
         onPress={() => router.push({ pathname: '/(executor)/task/[id]', params: { id: item.id } })}
         activeOpacity={0.85}
       >
-        <BlurView intensity={18} tint="dark" style={StyleSheet.absoluteFill} />
+        <BlurView intensity={18} tint={blurTint} style={StyleSheet.absoluteFill} />
         <View style={styles.chatCardBg} />
         <View style={{ position: 'relative', flexDirection: 'row', alignItems: 'center', padding: 14 }}>
           {/* Avatar */}
@@ -58,7 +61,7 @@ export default function ExecutorChatScreen() {
 
   return (
     <View style={styles.root}>
-      <StatusBar barStyle="light-content" />
+      <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
       <LinearGradient colors={GRADIENTS.bg} style={StyleSheet.absoluteFill} />
       <View style={styles.glowTop} />
 
@@ -69,7 +72,7 @@ export default function ExecutorChatScreen() {
 
         {/* Support card */}
         <TouchableOpacity style={styles.supportCard} activeOpacity={0.85}>
-          <BlurView intensity={20} tint="dark" style={StyleSheet.absoluteFill} />
+          <BlurView intensity={20} tint={blurTint} style={StyleSheet.absoluteFill} />
           <LinearGradient colors={['rgba(139,92,246,0.20)', 'rgba(6,182,212,0.10)']} style={StyleSheet.absoluteFill} />
           <View style={styles.supportBorder} />
           <View style={{ position: 'relative', flexDirection: 'row', alignItems: 'center', padding: 14 }}>
@@ -116,47 +119,49 @@ function formatTime(iso: string) {
   return d.toLocaleDateString('ru', { day: '2-digit', month: '2-digit' });
 }
 
-const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: COLORS.bg },
-  safe: { flex: 1 },
-  glowTop: {
-    position: 'absolute', top: -60, left: '20%',
-    width: 200, height: 200, borderRadius: 100,
-    backgroundColor: 'rgba(6,182,212,0.10)',
-  },
+function makeStyles(C: AppColors, C_RADIUS = RADIUS) {
+  return StyleSheet.create({
+    root: { flex: 1, backgroundColor: C.bg },
+    safe: { flex: 1 },
+    glowTop: {
+      position: 'absolute', top: -60, left: '20%',
+      width: 200, height: 200, borderRadius: 100,
+      backgroundColor: 'rgba(6,182,212,0.10)',
+    },
 
-  header: { paddingHorizontal: 20, paddingTop: 8, paddingBottom: 12 },
-  title:  { fontSize: 24, fontWeight: '800', color: COLORS.text },
+    header: { paddingHorizontal: 20, paddingTop: 8, paddingBottom: 12 },
+    title:  { fontSize: 24, fontWeight: '800', color: C.text },
 
-  supportCard:  { marginHorizontal: 16, borderRadius: RADIUS.xl, overflow: 'hidden', marginBottom: 8 },
-  supportBorder:{ ...StyleSheet.absoluteFillObject, borderRadius: RADIUS.xl, borderWidth: 1, borderColor: COLORS.glassBorder },
+    supportCard:  { marginHorizontal: 16, borderRadius: C_RADIUS.xl, overflow: 'hidden', marginBottom: 8 },
+    supportBorder:{ ...StyleSheet.absoluteFillObject, borderRadius: C_RADIUS.xl, borderWidth: 1, borderColor: C.glassBorder },
 
-  sectionLabel: { paddingHorizontal: 20, paddingVertical: 8, fontSize: 11, color: COLORS.textMuted, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.8 },
+    sectionLabel: { paddingHorizontal: 20, paddingVertical: 8, fontSize: 11, color: C.textMuted, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.8 },
 
-  list: { paddingHorizontal: 16, paddingBottom: 100 },
+    list: { paddingHorizontal: 16, paddingBottom: 100 },
 
-  chatCard:    { borderRadius: RADIUS.xl, overflow: 'hidden', marginBottom: 8 },
-  chatCardBg:  { ...StyleSheet.absoluteFillObject, backgroundColor: COLORS.glass, borderRadius: RADIUS.xl, borderWidth: 1, borderColor: COLORS.glassBorder },
+    chatCard:    { borderRadius: C_RADIUS.xl, overflow: 'hidden', marginBottom: 8 },
+    chatCardBg:  { ...StyleSheet.absoluteFillObject, backgroundColor: C.glass, borderRadius: C_RADIUS.xl, borderWidth: 1, borderColor: C.glassBorder },
 
-  avatarWrap:  { width: 46, height: 46, borderRadius: 23, overflow: 'hidden', alignItems: 'center', justifyContent: 'center', marginRight: 12 },
-  avatarBorder:{ ...StyleSheet.absoluteFillObject, borderRadius: 23, borderWidth: 1, borderColor: 'rgba(255,255,255,0.15)' },
-  avatarText:  { color: '#fff', fontWeight: '700', fontSize: 18, position: 'relative' },
-  onlineDot:   { position: 'absolute', bottom: 2, right: 2, width: 10, height: 10, borderRadius: 5, borderWidth: 2, borderColor: COLORS.bg },
+    avatarWrap:  { width: 46, height: 46, borderRadius: 23, overflow: 'hidden', alignItems: 'center', justifyContent: 'center', marginRight: 12 },
+    avatarBorder:{ ...StyleSheet.absoluteFillObject, borderRadius: 23, borderWidth: 1, borderColor: 'rgba(255,255,255,0.15)' },
+    avatarText:  { color: '#fff', fontWeight: '700', fontSize: 18, position: 'relative' },
+    onlineDot:   { position: 'absolute', bottom: 2, right: 2, width: 10, height: 10, borderRadius: 5, borderWidth: 2, borderColor: C.bg },
 
-  chatContent: { flex: 1 },
-  chatRow:     { flexDirection: 'row', alignItems: 'center', marginBottom: 3 },
-  chatName:    { flex: 1, fontSize: 15, fontWeight: '600', color: COLORS.text },
-  chatTime:    { fontSize: 12, color: COLORS.textMuted },
-  chatPreview: { flex: 1, fontSize: 13, color: COLORS.textMuted },
-  unreadDot:   { width: 10, height: 10, borderRadius: 5, backgroundColor: COLORS.executor },
+    chatContent: { flex: 1 },
+    chatRow:     { flexDirection: 'row', alignItems: 'center', marginBottom: 3 },
+    chatName:    { flex: 1, fontSize: 15, fontWeight: '600', color: C.text },
+    chatTime:    { fontSize: 12, color: C.textMuted },
+    chatPreview: { flex: 1, fontSize: 13, color: C.textMuted },
+    unreadDot:   { width: 10, height: 10, borderRadius: 5, backgroundColor: C.executor },
 
-  stateBadge:     { alignSelf: 'flex-start', borderRadius: RADIUS.sm, paddingHorizontal: 8, paddingVertical: 2, marginTop: 4, borderWidth: 1 },
-  stateBadgeText: { fontSize: 11, fontWeight: '600' },
+    stateBadge:     { alignSelf: 'flex-start', borderRadius: C_RADIUS.sm, paddingHorizontal: 8, paddingVertical: 2, marginTop: 4, borderWidth: 1 },
+    stateBadgeText: { fontSize: 11, fontWeight: '600' },
 
-  chevron: { fontSize: 22, color: COLORS.textMuted },
+    chevron: { fontSize: 22, color: C.textMuted },
 
-  empty:     { alignItems: 'center', paddingTop: 80 },
-  emptyIcon: { fontSize: 48, marginBottom: 16 },
-  emptyText: { fontSize: 16, fontWeight: '700', color: COLORS.text, marginBottom: 8 },
-  emptyHint: { fontSize: 14, color: COLORS.textMuted },
-});
+    empty:     { alignItems: 'center', paddingTop: 80 },
+    emptyIcon: { fontSize: 48, marginBottom: 16 },
+    emptyText: { fontSize: 16, fontWeight: '700', color: C.text, marginBottom: 8 },
+    emptyHint: { fontSize: 14, color: C.textMuted },
+  });
+}

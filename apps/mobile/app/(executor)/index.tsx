@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useMemo } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, StatusBar, RefreshControl, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -8,11 +8,12 @@ import * as Location from 'expo-location';
 import { useTaskStore } from '../../src/stores/taskStore';
 import { useAuthStore } from '../../src/stores/authStore';
 import { getSocket } from '../../src/services/socket';
-import { COLORS, RADIUS, GRADIENTS, SHADOW, TASK_STATE_COLORS, TASK_STATE_LABELS } from '../../src/constants/config';
+import { RADIUS, SHADOW, TASK_STATE_COLORS, TASK_STATE_LABELS, type AppColors } from '../../src/constants/config';
+import { useAppTheme } from '../../src/hooks/useAppTheme';
 import type { Task } from '../../src/services/api';
 
 // ── Countdown timer ────────────────────────────────────────────────────────────
-function Countdown({ expiresAt }: { expiresAt: string }) {
+function Countdown({ expiresAt, styles }: { expiresAt: string; styles: any }) {
   const [secs, setSecs] = useState(() => Math.max(0, Math.floor((new Date(expiresAt).getTime() - Date.now()) / 1000)));
   const ref = useRef<ReturnType<typeof setInterval> | null>(null);
   useEffect(() => {
@@ -35,6 +36,8 @@ export default function ExecutorDashboard() {
   const router = useRouter();
   const { feed, isFeedLoading, loadFeed, myTasks, loadMyTasks } = useTaskStore();
   const { user, token } = useAuthStore();
+  const { COLORS, GRADIENTS, isDark, blurTint } = useAppTheme();
+  const styles = useMemo(() => makeStyles(COLORS), [COLORS]);
 
   const fetchAll = async () => {
     loadMyTasks();
@@ -69,7 +72,7 @@ export default function ExecutorDashboard() {
 
   return (
     <View style={styles.root}>
-      <StatusBar barStyle="light-content" />
+      <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
       <LinearGradient colors={GRADIENTS.bg} style={StyleSheet.absoluteFill} />
       <View style={styles.glowTop} />
       <View style={styles.glowRight} />
@@ -88,7 +91,7 @@ export default function ExecutorDashboard() {
             </View>
             <TouchableOpacity onPress={() => router.push('/(executor)/profile')}>
               <View style={styles.avatarWrap}>
-                <BlurView intensity={30} tint="dark" style={StyleSheet.absoluteFill} />
+                <BlurView intensity={30} tint={blurTint} style={StyleSheet.absoluteFill} />
                 <View style={styles.avatarOverlay} />
                 <Text style={styles.avatarText}>{user?.name?.[0]?.toUpperCase() ?? '?'}</Text>
               </View>
@@ -97,9 +100,9 @@ export default function ExecutorDashboard() {
 
           {/* ── Stats bento ────────────────────── */}
           <View style={styles.statsRow}>
-            <StatCard value={feed.length}  label="Новых"    color={COLORS.executor}  glow={COLORS.executorGlow} />
-            <StatCard value={completed}    label="Выполнено" color={COLORS.success}   glow={COLORS.successGlow} />
-            <StatCard value={hotOrders.length} label="Горящих" color={COLORS.danger}  glow={COLORS.dangerGlow} />
+            <StatCard value={feed.length}  label="Новых"    color={COLORS.executor}  glow={COLORS.executorGlow} styles={styles} blurTint={blurTint} />
+            <StatCard value={completed}    label="Выполнено" color={COLORS.success}   glow={COLORS.successGlow} styles={styles} blurTint={blurTint} />
+            <StatCard value={hotOrders.length} label="Горящих" color={COLORS.danger}  glow={COLORS.dangerGlow} styles={styles} blurTint={blurTint} />
           </View>
 
           {/* ── Active task ─────────────────────── */}
@@ -111,7 +114,7 @@ export default function ExecutorDashboard() {
                 onPress={() => router.push({ pathname: '/(executor)/task/[id]', params: { id: activeTask.id } })}
                 activeOpacity={0.85}
               >
-                <BlurView intensity={25} tint="dark" style={StyleSheet.absoluteFill} />
+                <BlurView intensity={25} tint={blurTint} style={StyleSheet.absoluteFill} />
                 <LinearGradient
                   colors={['rgba(6,182,212,0.35)', 'rgba(139,92,246,0.20)']}
                   start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
@@ -149,6 +152,9 @@ export default function ExecutorDashboard() {
               {hotOrders.map(task => (
                 <OrderCard
                   key={task.id} task={task} hot
+                  styles={styles}
+                  COLORS={COLORS}
+                  blurTint={blurTint}
                   onPress={() => router.push({ pathname: '/(executor)/task/[id]', params: { id: task.id } })}
                 />
               ))}
@@ -167,6 +173,9 @@ export default function ExecutorDashboard() {
               {newOrders.map(task => (
                 <OrderCard
                   key={task.id} task={task}
+                  styles={styles}
+                  COLORS={COLORS}
+                  blurTint={blurTint}
                   onPress={() => router.push({ pathname: '/(executor)/task/[id]', params: { id: task.id } })}
                 />
               ))}
@@ -192,10 +201,10 @@ export default function ExecutorDashboard() {
 }
 
 // ── Stat card ──────────────────────────────────────────────────────────────────
-function StatCard({ value, label, color, glow }: { value: number; label: string; color: string; glow: string }) {
+function StatCard({ value, label, color, glow, styles, blurTint }: { value: number; label: string; color: string; glow: string; styles: any; blurTint: 'dark' | 'light' }) {
   return (
     <View style={styles.statCard}>
-      <BlurView intensity={20} tint="dark" style={StyleSheet.absoluteFill} />
+      <BlurView intensity={20} tint={blurTint} style={StyleSheet.absoluteFill} />
       <View style={[styles.statOverlay, { backgroundColor: glow }]} />
       <View style={styles.statBorder} />
       <View style={{ position: 'relative', alignItems: 'center' }}>
@@ -207,10 +216,10 @@ function StatCard({ value, label, color, glow }: { value: number; label: string;
 }
 
 // ── Order card ─────────────────────────────────────────────────────────────────
-function OrderCard({ task, hot, onPress }: { task: Task; hot?: boolean; onPress: () => void }) {
+function OrderCard({ task, hot, onPress, styles, COLORS, blurTint }: { task: Task; hot?: boolean; onPress: () => void; styles: any; COLORS: AppColors; blurTint: 'dark' | 'light' }) {
   return (
     <TouchableOpacity style={styles.orderCard} onPress={onPress} activeOpacity={0.8}>
-      <BlurView intensity={18} tint="dark" style={StyleSheet.absoluteFill} />
+      <BlurView intensity={18} tint={blurTint} style={StyleSheet.absoluteFill} />
       <View style={styles.orderBg} />
       {hot && <View style={[styles.orderAccent, { backgroundColor: COLORS.danger }]} />}
       {!hot && <View style={[styles.orderAccent, { backgroundColor: COLORS.executor }]} />}
@@ -228,7 +237,7 @@ function OrderCard({ task, hot, onPress }: { task: Task; hot?: boolean; onPress:
           <Text style={[styles.orderPrice, { color: hot ? COLORS.danger : COLORS.executor }]}>
             {task.price_final} ₽
           </Text>
-          {hot && task.expires_at && <Countdown expiresAt={task.expires_at} />}
+          {hot && task.expires_at && <Countdown expiresAt={task.expires_at} styles={styles} />}
         </View>
       </View>
     </TouchableOpacity>
@@ -236,72 +245,74 @@ function OrderCard({ task, hot, onPress }: { task: Task; hot?: boolean; onPress:
 }
 
 // ── Styles ─────────────────────────────────────────────────────────────────────
-const styles = StyleSheet.create({
-  root:  { flex: 1, backgroundColor: COLORS.bg },
-  safe:  { flex: 1 },
-  scroll: { paddingHorizontal: 20 },
+function makeStyles(C: AppColors, C_RADIUS = RADIUS) {
+  return StyleSheet.create({
+    root:  { flex: 1, backgroundColor: C.bg },
+    safe:  { flex: 1 },
+    scroll: { paddingHorizontal: 20 },
 
-  glowTop: {
-    position: 'absolute', top: -100, right: -60,
-    width: 260, height: 260, borderRadius: 130,
-    backgroundColor: 'rgba(6,182,212,0.15)',
-  },
-  glowRight: {
-    position: 'absolute', bottom: 200, left: -80,
-    width: 200, height: 200, borderRadius: 100,
-    backgroundColor: 'rgba(139,92,246,0.10)',
-  },
+    glowTop: {
+      position: 'absolute', top: -100, right: -60,
+      width: 260, height: 260, borderRadius: 130,
+      backgroundColor: 'rgba(6,182,212,0.15)',
+    },
+    glowRight: {
+      position: 'absolute', bottom: 200, left: -80,
+      width: 200, height: 200, borderRadius: 100,
+      backgroundColor: 'rgba(139,92,246,0.10)',
+    },
 
-  header:       { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingTop: 8, marginBottom: 24 },
-  greeting:     { fontSize: 13, color: COLORS.textMuted, fontWeight: '500' },
-  name:         { fontSize: 24, fontWeight: '800', color: COLORS.text, marginTop: 2 },
-  avatarWrap:   { width: 44, height: 44, borderRadius: 22, overflow: 'hidden', alignItems: 'center', justifyContent: 'center' },
-  avatarOverlay:{ ...StyleSheet.absoluteFillObject, backgroundColor: COLORS.glassCyan, borderRadius: 22, borderWidth: 1, borderColor: COLORS.glassBorder },
-  avatarText:   { color: COLORS.text, fontWeight: '700', fontSize: 16, position: 'relative' },
+    header:       { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingTop: 8, marginBottom: 24 },
+    greeting:     { fontSize: 13, color: C.textMuted, fontWeight: '500' },
+    name:         { fontSize: 24, fontWeight: '800', color: C.text, marginTop: 2 },
+    avatarWrap:   { width: 44, height: 44, borderRadius: 22, overflow: 'hidden', alignItems: 'center', justifyContent: 'center' },
+    avatarOverlay:{ ...StyleSheet.absoluteFillObject, backgroundColor: C.glassCyan, borderRadius: 22, borderWidth: 1, borderColor: C.glassBorder },
+    avatarText:   { color: C.text, fontWeight: '700', fontSize: 16, position: 'relative' },
 
-  statsRow: { flexDirection: 'row', gap: 10, marginBottom: 28 },
-  statCard: { flex: 1, borderRadius: RADIUS.lg, overflow: 'hidden', paddingVertical: 16 },
-  statOverlay:  { ...StyleSheet.absoluteFillObject },
-  statBorder:   { ...StyleSheet.absoluteFillObject, borderRadius: RADIUS.lg, borderWidth: 1, borderColor: COLORS.glassBorder },
-  statValue:    { fontSize: 22, fontWeight: '800', marginBottom: 2 },
-  statLabel:    { fontSize: 10, color: COLORS.textMuted, fontWeight: '600', textTransform: 'uppercase' },
+    statsRow: { flexDirection: 'row', gap: 10, marginBottom: 28 },
+    statCard: { flex: 1, borderRadius: C_RADIUS.lg, overflow: 'hidden', paddingVertical: 16 },
+    statOverlay:  { ...StyleSheet.absoluteFillObject },
+    statBorder:   { ...StyleSheet.absoluteFillObject, borderRadius: C_RADIUS.lg, borderWidth: 1, borderColor: C.glassBorder },
+    statValue:    { fontSize: 22, fontWeight: '800', marginBottom: 2 },
+    statLabel:    { fontSize: 10, color: C.textMuted, fontWeight: '600', textTransform: 'uppercase' },
 
-  section:     { marginBottom: 24 },
-  sectionRow:  { flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
-  sectionTitle:{ flex: 1, fontSize: 15, fontWeight: '700', color: COLORS.textMuted, textTransform: 'uppercase', letterSpacing: 0.5 },
-  seeAll:      { fontSize: 14, color: COLORS.executor, fontWeight: '600' },
+    section:     { marginBottom: 24 },
+    sectionRow:  { flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
+    sectionTitle:{ flex: 1, fontSize: 15, fontWeight: '700', color: C.textMuted, textTransform: 'uppercase', letterSpacing: 0.5 },
+    seeAll:      { fontSize: 14, color: C.executor, fontWeight: '600' },
 
-  hotPill:     { backgroundColor: COLORS.dangerGlow, borderRadius: RADIUS.full, paddingHorizontal: 10, paddingVertical: 3, borderWidth: 1, borderColor: COLORS.danger + '40' },
-  hotPillText: { color: COLORS.danger, fontSize: 12, fontWeight: '700' },
+    hotPill:     { backgroundColor: C.dangerGlow, borderRadius: C_RADIUS.full, paddingHorizontal: 10, paddingVertical: 3, borderWidth: 1, borderColor: C.danger + '40' },
+    hotPillText: { color: C.danger, fontSize: 12, fontWeight: '700' },
 
-  activeCard:   { borderRadius: RADIUS.xxl, overflow: 'hidden' },
-  activeBorder: { ...StyleSheet.absoluteFillObject, borderRadius: RADIUS.xxl, borderWidth: 1, borderColor: COLORS.glassBorder },
-  activeHeader: { flexDirection: 'row', alignItems: 'flex-start', marginBottom: 10 },
-  activeTitle:  { flex: 1, fontSize: 17, fontWeight: '700', color: COLORS.text, marginRight: 8 },
-  activeAddr:   { fontSize: 13, color: COLORS.textMuted, marginBottom: 16 },
-  activeFooter: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  activePrice:  { fontSize: 26, fontWeight: '800', color: COLORS.text },
-  activeAction: { fontSize: 14, color: COLORS.executor, fontWeight: '600' },
+    activeCard:   { borderRadius: C_RADIUS.xxl, overflow: 'hidden' },
+    activeBorder: { ...StyleSheet.absoluteFillObject, borderRadius: C_RADIUS.xxl, borderWidth: 1, borderColor: C.glassBorder },
+    activeHeader: { flexDirection: 'row', alignItems: 'flex-start', marginBottom: 10 },
+    activeTitle:  { flex: 1, fontSize: 17, fontWeight: '700', color: C.text, marginRight: 8 },
+    activeAddr:   { fontSize: 13, color: C.textMuted, marginBottom: 16 },
+    activeFooter: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+    activePrice:  { fontSize: 26, fontWeight: '800', color: C.text },
+    activeAction: { fontSize: 14, color: C.executor, fontWeight: '600' },
 
-  badge:        { borderRadius: RADIUS.sm, paddingHorizontal: 8, paddingVertical: 4 },
-  badgeText:    { fontSize: 11, fontWeight: '600' },
+    badge:        { borderRadius: C_RADIUS.sm, paddingHorizontal: 8, paddingVertical: 4 },
+    badgeText:    { fontSize: 11, fontWeight: '600' },
 
-  orderCard:    { borderRadius: RADIUS.xl, overflow: 'hidden', marginBottom: 10 },
-  orderBg:      { ...StyleSheet.absoluteFillObject, backgroundColor: COLORS.glass, borderRadius: RADIUS.xl, borderWidth: 1, borderColor: COLORS.glassBorder },
-  orderAccent:  { position: 'absolute', left: 0, top: 12, bottom: 12, width: 3, borderRadius: 2 },
-  orderTitle:   { fontSize: 15, fontWeight: '600', color: COLORS.text, marginBottom: 4 },
-  orderAddr:    { fontSize: 12, color: COLORS.textMuted, marginBottom: 6 },
-  orderPrice:   { fontSize: 18, fontWeight: '800', marginBottom: 4 },
+    orderCard:    { borderRadius: C_RADIUS.xl, overflow: 'hidden', marginBottom: 10 },
+    orderBg:      { ...StyleSheet.absoluteFillObject, backgroundColor: C.glass, borderRadius: C_RADIUS.xl, borderWidth: 1, borderColor: C.glassBorder },
+    orderAccent:  { position: 'absolute', left: 0, top: 12, bottom: 12, width: 3, borderRadius: 2 },
+    orderTitle:   { fontSize: 15, fontWeight: '600', color: C.text, marginBottom: 4 },
+    orderAddr:    { fontSize: 12, color: C.textMuted, marginBottom: 6 },
+    orderPrice:   { fontSize: 18, fontWeight: '800', marginBottom: 4 },
 
-  categoryPill: { alignSelf: 'flex-start', backgroundColor: COLORS.glassCyan, borderRadius: RADIUS.full, paddingHorizontal: 8, paddingVertical: 2 },
-  categoryText: { fontSize: 11, color: COLORS.executorLight, fontWeight: '600' },
+    categoryPill: { alignSelf: 'flex-start', backgroundColor: C.glassCyan, borderRadius: C_RADIUS.full, paddingHorizontal: 8, paddingVertical: 2 },
+    categoryText: { fontSize: 11, color: C.executorLight, fontWeight: '600' },
 
-  countdown:    { backgroundColor: COLORS.dangerGlow, borderRadius: RADIUS.sm, paddingHorizontal: 8, paddingVertical: 3 },
-  countdownHot: { backgroundColor: COLORS.danger },
-  countdownText:{ fontSize: 12, fontWeight: '700', color: COLORS.danger },
+    countdown:    { backgroundColor: C.dangerGlow, borderRadius: C_RADIUS.sm, paddingHorizontal: 8, paddingVertical: 3 },
+    countdownHot: { backgroundColor: C.danger },
+    countdownText:{ fontSize: 12, fontWeight: '700', color: C.danger },
 
-  empty:     { alignItems: 'center', paddingTop: 60 },
-  emptyIcon: { fontSize: 48, marginBottom: 16 },
-  emptyText: { fontSize: 16, fontWeight: '600', color: COLORS.text, marginBottom: 8 },
-  emptyHint: { fontSize: 14, color: COLORS.textMuted },
-});
+    empty:     { alignItems: 'center', paddingTop: 60 },
+    emptyIcon: { fontSize: 48, marginBottom: 16 },
+    emptyText: { fontSize: 16, fontWeight: '600', color: C.text, marginBottom: 8 },
+    emptyHint: { fontSize: 14, color: C.textMuted },
+  });
+}

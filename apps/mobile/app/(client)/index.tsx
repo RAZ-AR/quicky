@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, StatusBar } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -6,12 +6,15 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
 import { useAuthStore } from '../../src/stores/authStore';
 import { useTaskStore } from '../../src/stores/taskStore';
-import { COLORS, RADIUS, SHADOW, GRADIENTS, TASK_STATE_COLORS, TASK_STATE_LABELS } from '../../src/constants/config';
+import { RADIUS, SHADOW, TASK_STATE_COLORS, TASK_STATE_LABELS, type AppColors } from '../../src/constants/config';
+import { useAppTheme } from '../../src/hooks/useAppTheme';
 
 export default function ClientHomeScreen() {
   const router = useRouter();
   const { user } = useAuthStore();
   const { myTasks, loadMyTasks } = useTaskStore();
+  const { COLORS, GRADIENTS, isDark, blurTint } = useAppTheme();
+  const styles = useMemo(() => makeStyles(COLORS), [COLORS]);
 
   useEffect(() => { loadMyTasks(); }, []);
 
@@ -25,7 +28,7 @@ export default function ClientHomeScreen() {
 
   return (
     <View style={styles.root}>
-      <StatusBar barStyle="light-content" />
+      <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
       <LinearGradient colors={GRADIENTS.bg} style={StyleSheet.absoluteFill} />
 
       {/* Ambient glow */}
@@ -43,7 +46,7 @@ export default function ClientHomeScreen() {
             </View>
             <TouchableOpacity onPress={() => router.push('/(client)/profile')}>
               <View style={styles.avatarWrap}>
-                <BlurView intensity={30} tint="dark" style={StyleSheet.absoluteFill} />
+                <BlurView intensity={30} tint={blurTint} style={StyleSheet.absoluteFill} />
                 <View style={styles.avatarOverlay} />
                 <Text style={styles.avatarText}>{user?.name?.[0]?.toUpperCase() ?? '?'}</Text>
               </View>
@@ -52,7 +55,7 @@ export default function ClientHomeScreen() {
 
           {/* ── Hero CTA ─────────────────────────────── */}
           <View style={[styles.heroCard, SHADOW.glow]}>
-            <BlurView intensity={25} tint="dark" style={StyleSheet.absoluteFill} />
+            <BlurView intensity={25} tint={blurTint} style={StyleSheet.absoluteFill} />
             <LinearGradient
               colors={['rgba(139,92,246,0.35)', 'rgba(6,182,212,0.15)']}
               start={{ x: 0, y: 0 }}
@@ -97,7 +100,7 @@ export default function ClientHomeScreen() {
                 style={styles.quickCard}
                 onPress={() => router.push({ pathname: '/(client)/clarify', params: { mode: 'text', hint: label } })}
               >
-                <BlurView intensity={20} tint="dark" style={StyleSheet.absoluteFill} />
+                <BlurView intensity={20} tint={blurTint} style={StyleSheet.absoluteFill} />
                 <View style={[styles.quickOverlay, { backgroundColor: color }]} />
                 <View style={styles.quickBorder} />
                 <View style={{ position: 'relative', alignItems: 'center' }}>
@@ -121,6 +124,9 @@ export default function ClientHomeScreen() {
                 <TaskCard
                   key={task.id}
                   task={task}
+                  styles={styles}
+                  COLORS={COLORS}
+                  blurTint={blurTint}
                   onPress={() => router.push({ pathname: '/(client)/tasks/[id]', params: { id: task.id } })}
                 />
               ))}
@@ -140,6 +146,9 @@ export default function ClientHomeScreen() {
                 <TaskCard
                   key={task.id}
                   task={task}
+                  styles={styles}
+                  COLORS={COLORS}
+                  blurTint={blurTint}
                   onPress={() => router.push({ pathname: '/(client)/tasks/[id]', params: { id: task.id } })}
                 />
               ))}
@@ -154,11 +163,11 @@ export default function ClientHomeScreen() {
 }
 
 // ── Task Card ──────────────────────────────────────────────────────────────────
-function TaskCard({ task, onPress }: { task: any; onPress: () => void }) {
+function TaskCard({ task, onPress, styles, COLORS, blurTint }: { task: any; onPress: () => void; styles: any; COLORS: AppColors; blurTint: 'dark' | 'light' }) {
   const stateColor = TASK_STATE_COLORS[task.state] ?? COLORS.textMuted;
   return (
     <TouchableOpacity style={styles.taskCard} onPress={onPress} activeOpacity={0.8}>
-      <BlurView intensity={18} tint="dark" style={StyleSheet.absoluteFill} />
+      <BlurView intensity={18} tint={blurTint} style={StyleSheet.absoluteFill} />
       <View style={styles.taskCardBg} />
       <View style={[styles.taskAccent, { backgroundColor: stateColor }]} />
       <View style={{ position: 'relative', flex: 1, flexDirection: 'row', alignItems: 'center', padding: 16 }}>
@@ -180,76 +189,78 @@ function TaskCard({ task, onPress }: { task: any; onPress: () => void }) {
 }
 
 // ── Styles ─────────────────────────────────────────────────────────────────────
-const styles = StyleSheet.create({
-  root:          { flex: 1, backgroundColor: COLORS.bg },
-  safe:          { flex: 1 },
-  scroll:        { paddingHorizontal: 20 },
+function makeStyles(C: AppColors, C_RADIUS = RADIUS) {
+  return StyleSheet.create({
+    root:          { flex: 1, backgroundColor: C.bg },
+    safe:          { flex: 1 },
+    scroll:        { paddingHorizontal: 20 },
 
-  glowTop: {
-    position: 'absolute', top: -120, left: '20%',
-    width: 280, height: 280, borderRadius: 140,
-    backgroundColor: 'rgba(139,92,246,0.18)',
-  },
-  glowBottom: {
-    position: 'absolute', bottom: 100, right: -60,
-    width: 200, height: 200, borderRadius: 100,
-    backgroundColor: 'rgba(6,182,212,0.12)',
-  },
+    glowTop: {
+      position: 'absolute', top: -120, left: '20%',
+      width: 280, height: 280, borderRadius: 140,
+      backgroundColor: 'rgba(139,92,246,0.18)',
+    },
+    glowBottom: {
+      position: 'absolute', bottom: 100, right: -60,
+      width: 200, height: 200, borderRadius: 100,
+      backgroundColor: 'rgba(6,182,212,0.12)',
+    },
 
-  // Header
-  header:      { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingTop: 8, marginBottom: 24 },
-  greeting:    { fontSize: 13, color: COLORS.textMuted, fontWeight: '500' },
-  name:        { fontSize: 24, fontWeight: '800', color: COLORS.text, marginTop: 2 },
-  avatarWrap:  { width: 44, height: 44, borderRadius: 22, overflow: 'hidden', alignItems: 'center', justifyContent: 'center' },
-  avatarOverlay: { ...StyleSheet.absoluteFillObject, backgroundColor: COLORS.glassViolet, borderRadius: 22, borderWidth: 1, borderColor: COLORS.glassBorder },
-  avatarText:  { color: COLORS.text, fontWeight: '700', fontSize: 16, position: 'relative' },
+    // Header
+    header:      { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingTop: 8, marginBottom: 24 },
+    greeting:    { fontSize: 13, color: C.textMuted, fontWeight: '500' },
+    name:        { fontSize: 24, fontWeight: '800', color: C.text, marginTop: 2 },
+    avatarWrap:  { width: 44, height: 44, borderRadius: 22, overflow: 'hidden', alignItems: 'center', justifyContent: 'center' },
+    avatarOverlay: { ...StyleSheet.absoluteFillObject, backgroundColor: C.glassViolet, borderRadius: 22, borderWidth: 1, borderColor: C.glassBorder },
+    avatarText:  { color: C.text, fontWeight: '700', fontSize: 16, position: 'relative' },
 
-  // Hero
-  heroCard: {
-    borderRadius: RADIUS.xxl, overflow: 'hidden', marginBottom: 24,
-  },
-  heroBorder: {
-    ...StyleSheet.absoluteFillObject,
-    borderRadius: RADIUS.xxl, borderWidth: 1, borderColor: COLORS.glassBorder,
-  },
-  heroTitle:   { fontSize: 22, fontWeight: '800', color: COLORS.text, marginBottom: 6 },
-  heroSub:     { fontSize: 13, color: COLORS.textMuted, marginBottom: 20 },
-  heroRow:     { flexDirection: 'row', gap: 12 },
-  heroBtn: {
-    flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-    borderRadius: RADIUS.lg, paddingVertical: 14, gap: 8, overflow: 'hidden',
-  },
-  heroBtnGrad: { ...StyleSheet.absoluteFillObject, borderRadius: RADIUS.lg },
-  heroBtnGhost: { backgroundColor: COLORS.glass, borderWidth: 1, borderColor: COLORS.glassBorder },
-  heroBtnIcon: { fontSize: 18 },
-  heroBtnText: { fontSize: 15, fontWeight: '700', color: '#fff' },
+    // Hero
+    heroCard: {
+      borderRadius: C_RADIUS.xxl, overflow: 'hidden', marginBottom: 24,
+    },
+    heroBorder: {
+      ...StyleSheet.absoluteFillObject,
+      borderRadius: C_RADIUS.xxl, borderWidth: 1, borderColor: C.glassBorder,
+    },
+    heroTitle:   { fontSize: 22, fontWeight: '800', color: C.text, marginBottom: 6 },
+    heroSub:     { fontSize: 13, color: C.textMuted, marginBottom: 20 },
+    heroRow:     { flexDirection: 'row', gap: 12 },
+    heroBtn: {
+      flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+      borderRadius: C_RADIUS.lg, paddingVertical: 14, gap: 8, overflow: 'hidden',
+    },
+    heroBtnGrad: { ...StyleSheet.absoluteFillObject, borderRadius: C_RADIUS.lg },
+    heroBtnGhost: { backgroundColor: C.glass, borderWidth: 1, borderColor: C.glassBorder },
+    heroBtnIcon: { fontSize: 18 },
+    heroBtnText: { fontSize: 15, fontWeight: '700', color: '#fff' },
 
-  // Quick access
-  sectionTitle: { fontSize: 15, fontWeight: '700', color: COLORS.textMuted, marginBottom: 12, letterSpacing: 0.5, textTransform: 'uppercase' },
-  sectionRow:   { flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
-  seeAll:       { fontSize: 14, color: COLORS.primary, fontWeight: '600' },
-  quickRow:     { flexDirection: 'row', gap: 10, marginBottom: 28 },
-  quickCard: {
-    flex: 1, borderRadius: RADIUS.lg, overflow: 'hidden',
-    paddingVertical: 18, paddingHorizontal: 8,
-  },
-  quickOverlay: { ...StyleSheet.absoluteFillObject, borderRadius: RADIUS.lg },
-  quickBorder:  { ...StyleSheet.absoluteFillObject, borderRadius: RADIUS.lg, borderWidth: 1, borderColor: COLORS.glassBorder },
-  quickIcon:    { fontSize: 26, marginBottom: 8, textAlign: 'center' },
-  quickLabel:   { fontSize: 12, fontWeight: '600', color: COLORS.text, textAlign: 'center' },
+    // Quick access
+    sectionTitle: { fontSize: 15, fontWeight: '700', color: C.textMuted, marginBottom: 12, letterSpacing: 0.5, textTransform: 'uppercase' },
+    sectionRow:   { flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
+    seeAll:       { fontSize: 14, color: C.primary, fontWeight: '600' },
+    quickRow:     { flexDirection: 'row', gap: 10, marginBottom: 28 },
+    quickCard: {
+      flex: 1, borderRadius: C_RADIUS.lg, overflow: 'hidden',
+      paddingVertical: 18, paddingHorizontal: 8,
+    },
+    quickOverlay: { ...StyleSheet.absoluteFillObject, borderRadius: C_RADIUS.lg },
+    quickBorder:  { ...StyleSheet.absoluteFillObject, borderRadius: C_RADIUS.lg, borderWidth: 1, borderColor: C.glassBorder },
+    quickIcon:    { fontSize: 26, marginBottom: 8, textAlign: 'center' },
+    quickLabel:   { fontSize: 12, fontWeight: '600', color: C.text, textAlign: 'center' },
 
-  // Task cards
-  taskCard: {
-    borderRadius: RADIUS.xl, overflow: 'hidden', marginBottom: 10,
-  },
-  taskCardBg: {
-    ...StyleSheet.absoluteFillObject, backgroundColor: COLORS.glass,
-    borderRadius: RADIUS.xl, borderWidth: 1, borderColor: COLORS.glassBorder,
-  },
-  taskAccent: { position: 'absolute', left: 0, top: 12, bottom: 12, width: 3, borderRadius: 2 },
-  taskTitle:  { fontSize: 15, fontWeight: '600', color: COLORS.text, marginBottom: 4 },
-  taskAddr:   { fontSize: 12, color: COLORS.textMuted },
-  taskPrice:  { fontSize: 15, fontWeight: '700', color: COLORS.text, textAlign: 'right', marginBottom: 4 },
-  stateBadge: { borderRadius: RADIUS.sm, paddingHorizontal: 8, paddingVertical: 3 },
-  stateBadgeText: { fontSize: 11, fontWeight: '600' },
-});
+    // Task cards
+    taskCard: {
+      borderRadius: C_RADIUS.xl, overflow: 'hidden', marginBottom: 10,
+    },
+    taskCardBg: {
+      ...StyleSheet.absoluteFillObject, backgroundColor: C.glass,
+      borderRadius: C_RADIUS.xl, borderWidth: 1, borderColor: C.glassBorder,
+    },
+    taskAccent: { position: 'absolute', left: 0, top: 12, bottom: 12, width: 3, borderRadius: 2 },
+    taskTitle:  { fontSize: 15, fontWeight: '600', color: C.text, marginBottom: 4 },
+    taskAddr:   { fontSize: 12, color: C.textMuted },
+    taskPrice:  { fontSize: 15, fontWeight: '700', color: C.text, textAlign: 'right', marginBottom: 4 },
+    stateBadge: { borderRadius: C_RADIUS.sm, paddingHorizontal: 8, paddingVertical: 3 },
+    stateBadgeText: { fontSize: 11, fontWeight: '600' },
+  });
+}

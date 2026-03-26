@@ -1,16 +1,19 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, KeyboardAvoidingView, Platform, StatusBar } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
 import { useAuthStore } from '../../src/stores/authStore';
-import { COLORS, RADIUS, GRADIENTS } from '../../src/constants/config';
+import { RADIUS, type AppColors } from '../../src/constants/config';
+import { useAppTheme } from '../../src/hooks/useAppTheme';
 
 export default function LoginScreen() {
   const [phone, setPhone] = useState('');
   const { sendOtp, isLoading } = useAuthStore();
   const router = useRouter();
+  const { COLORS, GRADIENTS, isDark, blurTint } = useAppTheme();
+  const styles = useMemo(() => makeStyles(COLORS), [COLORS]);
 
   const handleNext = async () => {
     const cleaned = phone.replace(/\s/g, '');
@@ -25,7 +28,7 @@ export default function LoginScreen() {
 
   return (
     <View style={styles.root}>
-      <StatusBar barStyle="light-content" />
+      <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
       <LinearGradient colors={GRADIENTS.bg} style={StyleSheet.absoluteFill} />
       <View style={styles.glow1} />
       <View style={styles.glow2} />
@@ -45,14 +48,14 @@ export default function LoginScreen() {
 
             {/* Form card */}
             <View style={styles.formCard}>
-              <BlurView intensity={20} tint="dark" style={StyleSheet.absoluteFill} />
+              <BlurView intensity={20} tint={blurTint} style={StyleSheet.absoluteFill} />
               <View style={styles.formCardBg} />
               <View style={{ position: 'relative', padding: 24 }}>
                 <Text style={styles.title}>Введите номер телефона</Text>
                 <Text style={styles.subtitle}>Мы отправим вам код подтверждения</Text>
 
                 <View style={styles.inputWrap}>
-                  <BlurView intensity={15} tint="dark" style={StyleSheet.absoluteFill} />
+                  <BlurView intensity={15} tint={blurTint} style={StyleSheet.absoluteFill} />
                   <View style={styles.inputBg} />
                   <TextInput
                     style={styles.input}
@@ -86,31 +89,33 @@ export default function LoginScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: COLORS.bg },
-  safe: { flex: 1 },
-  kav:  { flex: 1 },
-  glow1: { position: 'absolute', top: '15%', left: '10%',  width: 260, height: 260, borderRadius: 130, backgroundColor: 'rgba(139,92,246,0.18)' },
-  glow2: { position: 'absolute', top: '45%', right: '-5%', width: 180, height: 180, borderRadius: 90,  backgroundColor: 'rgba(6,182,212,0.12)' },
+function makeStyles(C: AppColors, C_RADIUS = RADIUS) {
+  return StyleSheet.create({
+    root: { flex: 1, backgroundColor: C.bg },
+    safe: { flex: 1 },
+    kav:  { flex: 1 },
+    glow1: { position: 'absolute', top: '15%', left: '10%',  width: 260, height: 260, borderRadius: 130, backgroundColor: 'rgba(139,92,246,0.18)' },
+    glow2: { position: 'absolute', top: '45%', right: '-5%', width: 180, height: 180, borderRadius: 90,  backgroundColor: 'rgba(6,182,212,0.12)' },
 
-  inner: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 24 },
+    inner: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 24 },
 
-  logoWrap:   { width: 80, height: 80, borderRadius: 28, overflow: 'hidden', alignItems: 'center', justifyContent: 'center', marginBottom: 12 },
-  logoBorder: { ...StyleSheet.absoluteFillObject, borderRadius: 28, borderWidth: 1, borderColor: 'rgba(255,255,255,0.20)' },
-  logoEmoji:  { fontSize: 40, position: 'relative' },
-  logoText:   { fontSize: 36, fontWeight: '800', color: COLORS.text, marginBottom: 6 },
-  tagline:    { fontSize: 15, color: COLORS.textMuted, marginBottom: 32 },
+    logoWrap:   { width: 80, height: 80, borderRadius: 28, overflow: 'hidden', alignItems: 'center', justifyContent: 'center', marginBottom: 12 },
+    logoBorder: { ...StyleSheet.absoluteFillObject, borderRadius: 28, borderWidth: 1, borderColor: 'rgba(255,255,255,0.20)' },
+    logoEmoji:  { fontSize: 40, position: 'relative' },
+    logoText:   { fontSize: 36, fontWeight: '800', color: C.text, marginBottom: 6 },
+    tagline:    { fontSize: 15, color: C.textMuted, marginBottom: 32 },
 
-  formCard:   { borderRadius: RADIUS.xxl, overflow: 'hidden', width: '100%' },
-  formCardBg: { ...StyleSheet.absoluteFillObject, backgroundColor: COLORS.glass, borderRadius: RADIUS.xxl, borderWidth: 1, borderColor: COLORS.glassBorder },
+    formCard:   { borderRadius: C_RADIUS.xxl, overflow: 'hidden', width: '100%' },
+    formCardBg: { ...StyleSheet.absoluteFillObject, backgroundColor: C.glass, borderRadius: C_RADIUS.xxl, borderWidth: 1, borderColor: C.glassBorder },
 
-  title:    { fontSize: 20, fontWeight: '800', color: COLORS.text, marginBottom: 6 },
-  subtitle: { fontSize: 14, color: COLORS.textMuted, marginBottom: 20, lineHeight: 20 },
+    title:    { fontSize: 20, fontWeight: '800', color: C.text, marginBottom: 6 },
+    subtitle: { fontSize: 14, color: C.textMuted, marginBottom: 20, lineHeight: 20 },
 
-  inputWrap: { borderRadius: RADIUS.xl, overflow: 'hidden', marginBottom: 16 },
-  inputBg:   { ...StyleSheet.absoluteFillObject, backgroundColor: COLORS.bgLayer, borderRadius: RADIUS.xl, borderWidth: 1, borderColor: COLORS.glassBorder },
-  input:     { padding: 18, fontSize: 18, color: COLORS.text, position: 'relative' },
+    inputWrap: { borderRadius: C_RADIUS.xl, overflow: 'hidden', marginBottom: 16 },
+    inputBg:   { ...StyleSheet.absoluteFillObject, backgroundColor: C.bgLayer, borderRadius: C_RADIUS.xl, borderWidth: 1, borderColor: C.glassBorder },
+    input:     { padding: 18, fontSize: 18, color: C.text, position: 'relative' },
 
-  btn:     { borderRadius: RADIUS.xl, overflow: 'hidden', paddingVertical: 16, alignItems: 'center' },
-  btnText: { fontSize: 16, fontWeight: '700', color: '#fff', position: 'relative' },
-});
+    btn:     { borderRadius: C_RADIUS.xl, overflow: 'hidden', paddingVertical: 16, alignItems: 'center' },
+    btnText: { fontSize: 16, fontWeight: '700', color: '#fff', position: 'relative' },
+  });
+}

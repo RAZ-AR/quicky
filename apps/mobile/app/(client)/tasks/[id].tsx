@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Alert, ActivityIndicator, StatusBar } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
@@ -7,7 +7,8 @@ import { BlurView } from 'expo-blur';
 import { useTaskStore } from '../../../src/stores/taskStore';
 import { getSocket, joinTaskRoom, leaveTaskRoom } from '../../../src/services/socket';
 import { useAuthStore } from '../../../src/stores/authStore';
-import { COLORS, RADIUS, GRADIENTS, TASK_STATE_COLORS, TASK_STATE_LABELS } from '../../../src/constants/config';
+import { RADIUS, TASK_STATE_COLORS, TASK_STATE_LABELS, type AppColors } from '../../../src/constants/config';
+import { useAppTheme } from '../../../src/hooks/useAppTheme';
 
 export default function ClientTaskDetailScreen() {
   const router = useRouter();
@@ -16,6 +17,8 @@ export default function ClientTaskDetailScreen() {
   const { token } = useAuthStore();
   const [isLoading, setIsLoading] = useState(true);
   const [pendingMessage, setPendingMessage] = useState<{ id: string; content: string } | null>(null);
+  const { COLORS, GRADIENTS, isDark, blurTint } = useAppTheme();
+  const styles = useMemo(() => makeStyles(COLORS), [COLORS]);
 
   useEffect(() => {
     loadTask(id).finally(() => setIsLoading(false));
@@ -62,7 +65,7 @@ export default function ClientTaskDetailScreen() {
 
   return (
     <View style={styles.root}>
-      <StatusBar barStyle="light-content" />
+      <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
       <LinearGradient colors={GRADIENTS.bg} style={StyleSheet.absoluteFill} />
       <View style={[styles.glowAccent, { backgroundColor: stateColor + '20' }]} />
 
@@ -70,7 +73,7 @@ export default function ClientTaskDetailScreen() {
         {/* Header */}
         <View style={styles.header}>
           <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
-            <BlurView intensity={20} tint="dark" style={StyleSheet.absoluteFill} />
+            <BlurView intensity={20} tint={blurTint} style={StyleSheet.absoluteFill} />
             <View style={styles.backBtnBg} />
             <Text style={styles.backIcon}>←</Text>
           </TouchableOpacity>
@@ -86,21 +89,21 @@ export default function ClientTaskDetailScreen() {
 
           {/* Info card */}
           <View style={styles.card}>
-            <BlurView intensity={18} tint="dark" style={StyleSheet.absoluteFill} />
+            <BlurView intensity={18} tint={blurTint} style={StyleSheet.absoluteFill} />
             <View style={styles.cardBg} />
             <View style={{ position: 'relative', padding: 20 }}>
-              <DetailRow label="📦 Что нужно"       value={task.item_description ?? '—'} />
-              <DetailRow label="📍 Куда доставить"   value={task.to_location?.address ?? '—'} />
-              {task.from_location && <DetailRow label="🏪 Откуда забрать" value={task.from_location.address} />}
-              {task.price_final   && <DetailRow label="💰 Стоимость"     value={`${task.price_final} ₽`} last />}
-              {task.payment_method && <DetailRow label="💳 Оплата" value={task.payment_method === 'cash' ? 'Наличные' : 'Карта'} last />}
+              <DetailRow label="📦 Что нужно"       value={task.item_description ?? '—'} styles={styles} />
+              <DetailRow label="📍 Куда доставить"   value={task.to_location?.address ?? '—'} styles={styles} />
+              {task.from_location && <DetailRow label="🏪 Откуда забрать" value={task.from_location.address} styles={styles} />}
+              {task.price_final   && <DetailRow label="💰 Стоимость"     value={`${task.price_final} ₽`} last styles={styles} />}
+              {task.payment_method && <DetailRow label="💳 Оплата" value={task.payment_method === 'cash' ? 'Наличные' : 'Карта'} last styles={styles} />}
             </View>
           </View>
 
           {/* Executor */}
           {task.executor && (
             <View style={styles.card}>
-              <BlurView intensity={18} tint="dark" style={StyleSheet.absoluteFill} />
+              <BlurView intensity={18} tint={blurTint} style={StyleSheet.absoluteFill} />
               <View style={[styles.cardBg, { backgroundColor: COLORS.glassCyan }]} />
               <View style={{ position: 'relative', padding: 20 }}>
                 <Text style={styles.cardLabel}>Исполнитель</Text>
@@ -122,7 +125,7 @@ export default function ClientTaskDetailScreen() {
           {/* Problem from executor */}
           {hasProblem && pendingMessage && (
             <View style={styles.card}>
-              <BlurView intensity={18} tint="dark" style={StyleSheet.absoluteFill} />
+              <BlurView intensity={18} tint={blurTint} style={StyleSheet.absoluteFill} />
               <View style={[styles.cardBg, { backgroundColor: COLORS.warningGlow }]} />
               <View style={[styles.cardBorderLeft, { borderLeftColor: COLORS.warning }]} />
               <View style={{ position: 'relative', padding: 20 }}>
@@ -157,7 +160,7 @@ export default function ClientTaskDetailScreen() {
           {/* Cancel */}
           {canCancel && (
             <TouchableOpacity style={styles.cancelBtn} onPress={handleCancel} activeOpacity={0.8}>
-              <BlurView intensity={18} tint="dark" style={StyleSheet.absoluteFill} />
+              <BlurView intensity={18} tint={blurTint} style={StyleSheet.absoluteFill} />
               <View style={styles.cancelBtnBg} />
               <Text style={styles.cancelBtnText}>Отменить задание</Text>
             </TouchableOpacity>
@@ -170,7 +173,7 @@ export default function ClientTaskDetailScreen() {
   );
 }
 
-function DetailRow({ label, value, last }: { label: string; value: string; last?: boolean }) {
+function DetailRow({ label, value, last, styles }: { label: string; value: string; last?: boolean; styles: any }) {
   return (
     <View style={[styles.row, !last && styles.rowDivider]}>
       <Text style={styles.rowLabel}>{label}</Text>
@@ -179,50 +182,52 @@ function DetailRow({ label, value, last }: { label: string; value: string; last?
   );
 }
 
-const styles = StyleSheet.create({
-  root:   { flex: 1, backgroundColor: COLORS.bg },
-  safe:   { flex: 1 },
-  loader: { flex: 1, justifyContent: 'center' as const },
-  scroll: { paddingHorizontal: 16, paddingTop: 12 },
+function makeStyles(C: AppColors, C_RADIUS = RADIUS) {
+  return StyleSheet.create({
+    root:   { flex: 1, backgroundColor: C.bg },
+    safe:   { flex: 1 },
+    loader: { flex: 1, justifyContent: 'center' as const },
+    scroll: { paddingHorizontal: 16, paddingTop: 12 },
 
-  glowAccent: { position: 'absolute', top: 80, right: -40, width: 200, height: 200, borderRadius: 100 },
+    glowAccent: { position: 'absolute', top: 80, right: -40, width: 200, height: 200, borderRadius: 100 },
 
-  header:      { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingTop: 8, paddingBottom: 12, gap: 12 },
-  backBtn:     { width: 38, height: 38, borderRadius: 19, overflow: 'hidden', alignItems: 'center', justifyContent: 'center' },
-  backBtnBg:   { ...StyleSheet.absoluteFillObject, backgroundColor: COLORS.glass, borderRadius: 19, borderWidth: 1, borderColor: COLORS.glassBorder },
-  backIcon:    { color: COLORS.text, fontSize: 18, position: 'relative' },
-  headerTitle: { flex: 1, fontSize: 18, fontWeight: '700', color: COLORS.text },
-  stateBadge:  { borderRadius: RADIUS.full, paddingHorizontal: 12, paddingVertical: 5, borderWidth: 1 },
-  stateBadgeText: { fontSize: 12, fontWeight: '700' },
+    header:      { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingTop: 8, paddingBottom: 12, gap: 12 },
+    backBtn:     { width: 38, height: 38, borderRadius: 19, overflow: 'hidden', alignItems: 'center', justifyContent: 'center' },
+    backBtnBg:   { ...StyleSheet.absoluteFillObject, backgroundColor: C.glass, borderRadius: 19, borderWidth: 1, borderColor: C.glassBorder },
+    backIcon:    { color: C.text, fontSize: 18, position: 'relative' },
+    headerTitle: { flex: 1, fontSize: 18, fontWeight: '700', color: C.text },
+    stateBadge:  { borderRadius: C_RADIUS.full, paddingHorizontal: 12, paddingVertical: 5, borderWidth: 1 },
+    stateBadgeText: { fontSize: 12, fontWeight: '700' },
 
-  card:        { borderRadius: RADIUS.xl, overflow: 'hidden', marginBottom: 12 },
-  cardBg:      { ...StyleSheet.absoluteFillObject, backgroundColor: COLORS.glass, borderRadius: RADIUS.xl, borderWidth: 1, borderColor: COLORS.glassBorder },
-  cardBorderLeft: { position: 'absolute', left: 0, top: 16, bottom: 16, width: 3, borderRadius: 2 },
-  cardLabel:   { fontSize: 11, color: COLORS.textMuted, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 12 },
+    card:        { borderRadius: C_RADIUS.xl, overflow: 'hidden', marginBottom: 12 },
+    cardBg:      { ...StyleSheet.absoluteFillObject, backgroundColor: C.glass, borderRadius: C_RADIUS.xl, borderWidth: 1, borderColor: C.glassBorder },
+    cardBorderLeft: { position: 'absolute', left: 0, top: 16, bottom: 16, width: 3, borderRadius: 2 },
+    cardLabel:   { fontSize: 11, color: C.textMuted, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 12 },
 
-  row:         { flexDirection: 'row', paddingVertical: 10 },
-  rowDivider:  { borderBottomWidth: 1, borderBottomColor: COLORS.divider },
-  rowLabel:    { flex: 1, fontSize: 14, color: COLORS.textMuted },
-  rowValue:    { flex: 2, fontSize: 14, fontWeight: '500', color: COLORS.text },
+    row:         { flexDirection: 'row', paddingVertical: 10 },
+    rowDivider:  { borderBottomWidth: 1, borderBottomColor: C.divider },
+    rowLabel:    { flex: 1, fontSize: 14, color: C.textMuted },
+    rowValue:    { flex: 2, fontSize: 14, fontWeight: '500', color: C.text },
 
-  executorRow:        { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  executorAvatar:     { width: 44, height: 44, borderRadius: 22, backgroundColor: COLORS.glassCyan, borderWidth: 1, borderColor: COLORS.executor + '40', alignItems: 'center', justifyContent: 'center' },
-  executorAvatarText: { color: COLORS.executorLight, fontWeight: '700', fontSize: 18 },
-  executorName:       { fontSize: 16, fontWeight: '600', color: COLORS.text },
-  executorRating:     { fontSize: 13, color: COLORS.textMuted, marginTop: 2 },
+    executorRow:        { flexDirection: 'row', alignItems: 'center', gap: 12 },
+    executorAvatar:     { width: 44, height: 44, borderRadius: 22, backgroundColor: C.glassCyan, borderWidth: 1, borderColor: C.executor + '40', alignItems: 'center', justifyContent: 'center' },
+    executorAvatarText: { color: C.executorLight, fontWeight: '700', fontSize: 18 },
+    executorName:       { fontSize: 16, fontWeight: '600', color: C.text },
+    executorRating:     { fontSize: 13, color: C.textMuted, marginTop: 2 },
 
-  problemTitle: { fontSize: 15, fontWeight: '700', color: COLORS.warning, marginBottom: 8 },
-  problemText:  { fontSize: 15, color: COLORS.text, marginBottom: 16, lineHeight: 22 },
-  problemBtns:  { flexDirection: 'row', gap: 10 },
-  acceptBtn:    { flex: 1, borderRadius: RADIUS.lg, overflow: 'hidden', paddingVertical: 13, alignItems: 'center' },
-  rejectBtn:    { flex: 1, borderRadius: RADIUS.lg, overflow: 'hidden', paddingVertical: 13, alignItems: 'center' },
-  rejectBtnBg:  { ...StyleSheet.absoluteFillObject, backgroundColor: COLORS.dangerGlow, borderRadius: RADIUS.lg, borderWidth: 1, borderColor: COLORS.danger + '50' },
-  actionBtnText:{ fontSize: 15, fontWeight: '700', color: '#fff', position: 'relative' },
+    problemTitle: { fontSize: 15, fontWeight: '700', color: C.warning, marginBottom: 8 },
+    problemText:  { fontSize: 15, color: C.text, marginBottom: 16, lineHeight: 22 },
+    problemBtns:  { flexDirection: 'row', gap: 10 },
+    acceptBtn:    { flex: 1, borderRadius: C_RADIUS.lg, overflow: 'hidden', paddingVertical: 13, alignItems: 'center' },
+    rejectBtn:    { flex: 1, borderRadius: C_RADIUS.lg, overflow: 'hidden', paddingVertical: 13, alignItems: 'center' },
+    rejectBtnBg:  { ...StyleSheet.absoluteFillObject, backgroundColor: C.dangerGlow, borderRadius: C_RADIUS.lg, borderWidth: 1, borderColor: C.danger + '50' },
+    actionBtnText:{ fontSize: 15, fontWeight: '700', color: '#fff', position: 'relative' },
 
-  rateBtn:     { borderRadius: RADIUS.xl, overflow: 'hidden', paddingVertical: 16, alignItems: 'center', marginBottom: 12 },
-  rateBtnText: { fontSize: 16, fontWeight: '700', color: '#fff', position: 'relative' },
+    rateBtn:     { borderRadius: C_RADIUS.xl, overflow: 'hidden', paddingVertical: 16, alignItems: 'center', marginBottom: 12 },
+    rateBtnText: { fontSize: 16, fontWeight: '700', color: '#fff', position: 'relative' },
 
-  cancelBtn:    { borderRadius: RADIUS.xl, overflow: 'hidden', paddingVertical: 16, alignItems: 'center', marginBottom: 12 },
-  cancelBtnBg:  { ...StyleSheet.absoluteFillObject, backgroundColor: COLORS.dangerGlow, borderRadius: RADIUS.xl, borderWidth: 1, borderColor: COLORS.danger + '40' },
-  cancelBtnText:{ fontSize: 15, fontWeight: '600', color: COLORS.danger, position: 'relative' },
-});
+    cancelBtn:    { borderRadius: C_RADIUS.xl, overflow: 'hidden', paddingVertical: 16, alignItems: 'center', marginBottom: 12 },
+    cancelBtnBg:  { ...StyleSheet.absoluteFillObject, backgroundColor: C.dangerGlow, borderRadius: C_RADIUS.xl, borderWidth: 1, borderColor: C.danger + '40' },
+    cancelBtnText:{ fontSize: 15, fontWeight: '600', color: C.danger, position: 'relative' },
+  });
+}

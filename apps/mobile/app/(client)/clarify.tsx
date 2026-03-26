@@ -1,11 +1,12 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, StatusBar, KeyboardAvoidingView, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
 import { useTaskStore } from '../../src/stores/taskStore';
-import { COLORS, RADIUS, GRADIENTS } from '../../src/constants/config';
+import { RADIUS, type AppColors } from '../../src/constants/config';
+import { useAppTheme } from '../../src/hooks/useAppTheme';
 
 export default function ClarifyScreen() {
   const [answer, setAnswer] = useState('');
@@ -14,6 +15,8 @@ export default function ClarifyScreen() {
   const router = useRouter();
   const { mode } = useLocalSearchParams<{ mode?: string }>();
   const { creation, parseText, answerClarification, isCreating } = useTaskStore();
+  const { COLORS, GRADIENTS, isDark, blurTint } = useAppTheme();
+  const styles = useMemo(() => makeStyles(COLORS), [COLORS]);
 
   const question    = creation.nextQuestion;
   const isManualMode = mode === 'text' && !creation.taskId;
@@ -45,7 +48,7 @@ export default function ClarifyScreen() {
 
   return (
     <View style={styles.root}>
-      <StatusBar barStyle="light-content" />
+      <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
       <LinearGradient colors={GRADIENTS.bg} style={StyleSheet.absoluteFill} />
       <View style={styles.glowCenter} />
 
@@ -55,7 +58,7 @@ export default function ClarifyScreen() {
           {/* Back */}
           <View style={styles.topBar}>
             <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
-              <BlurView intensity={20} tint="dark" style={StyleSheet.absoluteFill} />
+              <BlurView intensity={20} tint={blurTint} style={StyleSheet.absoluteFill} />
               <View style={styles.backBtnBg} />
               <Text style={styles.backIcon}>←</Text>
             </TouchableOpacity>
@@ -83,7 +86,7 @@ export default function ClarifyScreen() {
             {/* Input or options */}
             {isManualMode ? (
               <View style={styles.inputWrap}>
-                <BlurView intensity={18} tint="dark" style={StyleSheet.absoluteFill} />
+                <BlurView intensity={18} tint={blurTint} style={StyleSheet.absoluteFill} />
                 <View style={styles.inputBg} />
                 <TextInput
                   style={styles.textArea}
@@ -106,7 +109,7 @@ export default function ClarifyScreen() {
                     onPress={() => setAnswer(opt)}
                     activeOpacity={0.8}
                   >
-                    <BlurView intensity={18} tint="dark" style={StyleSheet.absoluteFill} />
+                    <BlurView intensity={18} tint={blurTint} style={StyleSheet.absoluteFill} />
                     <View style={[
                       styles.optionBg,
                       answer === opt && { backgroundColor: COLORS.glassViolet, borderColor: COLORS.primary + '60' },
@@ -120,7 +123,7 @@ export default function ClarifyScreen() {
               </View>
             ) : (
               <View style={styles.inputWrap}>
-                <BlurView intensity={18} tint="dark" style={StyleSheet.absoluteFill} />
+                <BlurView intensity={18} tint={blurTint} style={StyleSheet.absoluteFill} />
                 <View style={styles.inputBg} />
                 <TextInput
                   style={styles.input}
@@ -161,39 +164,41 @@ export default function ClarifyScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  root:       { flex: 1, backgroundColor: COLORS.bg },
-  safe:       { flex: 1 },
-  kav:        { flex: 1 },
-  glowCenter: { position: 'absolute', top: '30%', left: '10%', width: 300, height: 300, borderRadius: 150, backgroundColor: 'rgba(139,92,246,0.12)' },
+function makeStyles(C: AppColors, C_RADIUS = RADIUS) {
+  return StyleSheet.create({
+    root:       { flex: 1, backgroundColor: C.bg },
+    safe:       { flex: 1 },
+    kav:        { flex: 1 },
+    glowCenter: { position: 'absolute', top: '30%', left: '10%', width: 300, height: 300, borderRadius: 150, backgroundColor: 'rgba(139,92,246,0.12)' },
 
-  topBar:   { paddingHorizontal: 20, paddingTop: 8 },
-  backBtn:  { width: 38, height: 38, borderRadius: 19, overflow: 'hidden', alignItems: 'center', justifyContent: 'center' },
-  backBtnBg:{ ...StyleSheet.absoluteFillObject, backgroundColor: COLORS.glass, borderRadius: 19, borderWidth: 1, borderColor: COLORS.glassBorder },
-  backIcon: { color: COLORS.text, fontSize: 18, position: 'relative' },
+    topBar:   { paddingHorizontal: 20, paddingTop: 8 },
+    backBtn:  { width: 38, height: 38, borderRadius: 19, overflow: 'hidden', alignItems: 'center', justifyContent: 'center' },
+    backBtnBg:{ ...StyleSheet.absoluteFillObject, backgroundColor: C.glass, borderRadius: 19, borderWidth: 1, borderColor: C.glassBorder },
+    backIcon: { color: C.text, fontSize: 18, position: 'relative' },
 
-  container:   { flex: 1, paddingHorizontal: 24, justifyContent: 'center' },
-  progressRow: { flexDirection: 'row', gap: 8, marginBottom: 32, justifyContent: 'center' },
-  dot:         { width: 8, height: 8, borderRadius: 4, backgroundColor: COLORS.glass },
-  dotActive:   { backgroundColor: COLORS.primary, width: 28, borderRadius: 4 },
+    container:   { flex: 1, paddingHorizontal: 24, justifyContent: 'center' },
+    progressRow: { flexDirection: 'row', gap: 8, marginBottom: 32, justifyContent: 'center' },
+    dot:         { width: 8, height: 8, borderRadius: 4, backgroundColor: C.glass },
+    dotActive:   { backgroundColor: C.primary, width: 28, borderRadius: 4 },
 
-  title:    { fontSize: 24, fontWeight: '800', color: COLORS.text, marginBottom: 8 },
-  subtitle: { fontSize: 15, color: COLORS.textMuted, marginBottom: 28, lineHeight: 22 },
+    title:    { fontSize: 24, fontWeight: '800', color: C.text, marginBottom: 8 },
+    subtitle: { fontSize: 15, color: C.textMuted, marginBottom: 28, lineHeight: 22 },
 
-  inputWrap:{ borderRadius: RADIUS.xl, overflow: 'hidden', marginBottom: 20 },
-  inputBg:  { ...StyleSheet.absoluteFillObject, backgroundColor: COLORS.glass, borderRadius: RADIUS.xl, borderWidth: 1, borderColor: COLORS.glassBorder },
-  input:    { padding: 18, fontSize: 16, color: COLORS.text, position: 'relative' },
-  textArea: { padding: 18, fontSize: 16, color: COLORS.text, height: 140, position: 'relative' },
+    inputWrap:{ borderRadius: C_RADIUS.xl, overflow: 'hidden', marginBottom: 20 },
+    inputBg:  { ...StyleSheet.absoluteFillObject, backgroundColor: C.glass, borderRadius: C_RADIUS.xl, borderWidth: 1, borderColor: C.glassBorder },
+    input:    { padding: 18, fontSize: 16, color: C.text, position: 'relative' },
+    textArea: { padding: 18, fontSize: 16, color: C.text, height: 140, position: 'relative' },
 
-  optionsList: { marginBottom: 20, gap: 8 },
-  optionBtn:   { borderRadius: RADIUS.lg, overflow: 'hidden' },
-  optionBg:    { ...StyleSheet.absoluteFillObject, backgroundColor: COLORS.glass, borderRadius: RADIUS.lg, borderWidth: 1, borderColor: COLORS.glassBorder },
-  optionCheck: { position: 'absolute', right: 18, top: '50%', width: 8, height: 8, borderRadius: 4, backgroundColor: COLORS.primary },
-  optionText:  { fontSize: 16, color: COLORS.text, padding: 16, position: 'relative' },
+    optionsList: { marginBottom: 20, gap: 8 },
+    optionBtn:   { borderRadius: C_RADIUS.lg, overflow: 'hidden' },
+    optionBg:    { ...StyleSheet.absoluteFillObject, backgroundColor: C.glass, borderRadius: C_RADIUS.lg, borderWidth: 1, borderColor: C.glassBorder },
+    optionCheck: { position: 'absolute', right: 18, top: '50%', width: 8, height: 8, borderRadius: 4, backgroundColor: C.primary },
+    optionText:  { fontSize: 16, color: C.text, padding: 16, position: 'relative' },
 
-  submitBtn:  { borderRadius: RADIUS.xl, overflow: 'hidden', paddingVertical: 16, alignItems: 'center', marginBottom: 12 },
-  submitText: { fontSize: 16, fontWeight: '700', color: '#fff', position: 'relative' },
+    submitBtn:  { borderRadius: C_RADIUS.xl, overflow: 'hidden', paddingVertical: 16, alignItems: 'center', marginBottom: 12 },
+    submitText: { fontSize: 16, fontWeight: '700', color: '#fff', position: 'relative' },
 
-  skipBtn:  { paddingVertical: 14, alignItems: 'center' },
-  skipText: { color: COLORS.textMuted, fontSize: 15 },
-});
+    skipBtn:  { paddingVertical: 14, alignItems: 'center' },
+    skipText: { color: C.textMuted, fontSize: 15 },
+  });
+}

@@ -1,22 +1,25 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, KeyboardAvoidingView, Platform, ScrollView, StatusBar } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
 import { useAuthStore } from '../../src/stores/authStore';
-import { COLORS, RADIUS, GRADIENTS } from '../../src/constants/config';
-
-const ROLES = [
-  { key: 'client'   as const, emoji: '🛒', name: 'Клиент',      desc: 'Создаю задания — купить, доставить, помочь', gradient: GRADIENTS.primary },
-  { key: 'executor' as const, emoji: '⚡', name: 'Исполнитель', desc: 'Выполняю задания и зарабатываю',              gradient: GRADIENTS.executor },
-];
+import { RADIUS, type AppColors } from '../../src/constants/config';
+import { useAppTheme } from '../../src/hooks/useAppTheme';
 
 export default function RegisterScreen() {
   const [name, setName] = useState('');
   const [role, setRole] = useState<'client' | 'executor' | null>(null);
   const { phone } = useLocalSearchParams<{ phone: string }>();
   const { register, isLoading } = useAuthStore();
+  const { COLORS, GRADIENTS, isDark, blurTint } = useAppTheme();
+  const styles = useMemo(() => makeStyles(COLORS), [COLORS]);
+
+  const ROLES = [
+    { key: 'client'   as const, emoji: '🛒', name: 'Клиент',      desc: 'Создаю задания — купить, доставить, помочь', gradient: GRADIENTS.primary },
+    { key: 'executor' as const, emoji: '⚡', name: 'Исполнитель', desc: 'Выполняю задания и зарабатываю',              gradient: GRADIENTS.executor },
+  ];
 
   const handleRegister = async () => {
     if (!name.trim()) { Alert.alert('Ошибка', 'Введите ваше имя'); return; }
@@ -32,7 +35,7 @@ export default function RegisterScreen() {
 
   return (
     <View style={styles.root}>
-      <StatusBar barStyle="light-content" />
+      <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
       <LinearGradient colors={GRADIENTS.bg} style={StyleSheet.absoluteFill} />
       <View style={styles.glow1} />
       <View style={styles.glow2} />
@@ -53,14 +56,14 @@ export default function RegisterScreen() {
 
             {/* Form */}
             <View style={styles.formCard}>
-              <BlurView intensity={20} tint="dark" style={StyleSheet.absoluteFill} />
+              <BlurView intensity={20} tint={blurTint} style={StyleSheet.absoluteFill} />
               <View style={styles.formCardBg} />
               <View style={{ position: 'relative', padding: 24 }}>
                 <Text style={styles.title}>Создать аккаунт</Text>
                 <Text style={styles.subtitle}>Как вас зовут?</Text>
 
                 <View style={styles.inputWrap}>
-                  <BlurView intensity={15} tint="dark" style={StyleSheet.absoluteFill} />
+                  <BlurView intensity={15} tint={blurTint} style={StyleSheet.absoluteFill} />
                   <View style={styles.inputBg} />
                   <TextInput
                     style={styles.input}
@@ -84,7 +87,7 @@ export default function RegisterScreen() {
                       onPress={() => setRole(r.key)}
                       activeOpacity={0.85}
                     >
-                      <BlurView intensity={18} tint="dark" style={StyleSheet.absoluteFill} />
+                      <BlurView intensity={18} tint={blurTint} style={StyleSheet.absoluteFill} />
                       <View style={[
                         styles.roleCardBg,
                         role === r.key && { backgroundColor: r.key === 'client' ? COLORS.glassViolet : COLORS.glassCyan, borderColor: (r.key === 'client' ? COLORS.primary : COLORS.executor) + '60' },
@@ -122,41 +125,43 @@ export default function RegisterScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: COLORS.bg },
-  safe: { flex: 1 },
-  kav:  { flex: 1 },
-  glow1: { position: 'absolute', top: '5%',  left: '5%',  width: 220, height: 220, borderRadius: 110, backgroundColor: 'rgba(139,92,246,0.15)' },
-  glow2: { position: 'absolute', top: '50%', right: '-5%',width: 180, height: 180, borderRadius: 90,  backgroundColor: 'rgba(6,182,212,0.10)' },
+function makeStyles(C: AppColors, C_RADIUS = RADIUS) {
+  return StyleSheet.create({
+    root: { flex: 1, backgroundColor: C.bg },
+    safe: { flex: 1 },
+    kav:  { flex: 1 },
+    glow1: { position: 'absolute', top: '5%',  left: '5%',  width: 220, height: 220, borderRadius: 110, backgroundColor: 'rgba(139,92,246,0.15)' },
+    glow2: { position: 'absolute', top: '50%', right: '-5%',width: 180, height: 180, borderRadius: 90,  backgroundColor: 'rgba(6,182,212,0.10)' },
 
-  scroll: { paddingHorizontal: 24, paddingTop: 20 },
+    scroll: { paddingHorizontal: 24, paddingTop: 20 },
 
-  logoArea: { alignItems: 'center', marginBottom: 24 },
-  logoWrap: { width: 68, height: 68, borderRadius: 22, overflow: 'hidden', alignItems: 'center', justifyContent: 'center', marginBottom: 8 },
-  logoBorder:{ ...StyleSheet.absoluteFillObject, borderRadius: 22, borderWidth: 1, borderColor: 'rgba(255,255,255,0.20)' },
-  logoEmoji: { fontSize: 34, position: 'relative' },
-  logoText:  { fontSize: 28, fontWeight: '800', color: COLORS.text },
+    logoArea: { alignItems: 'center', marginBottom: 24 },
+    logoWrap: { width: 68, height: 68, borderRadius: 22, overflow: 'hidden', alignItems: 'center', justifyContent: 'center', marginBottom: 8 },
+    logoBorder:{ ...StyleSheet.absoluteFillObject, borderRadius: 22, borderWidth: 1, borderColor: 'rgba(255,255,255,0.20)' },
+    logoEmoji: { fontSize: 34, position: 'relative' },
+    logoText:  { fontSize: 28, fontWeight: '800', color: C.text },
 
-  formCard:   { borderRadius: RADIUS.xxl, overflow: 'hidden' },
-  formCardBg: { ...StyleSheet.absoluteFillObject, backgroundColor: COLORS.glass, borderRadius: RADIUS.xxl, borderWidth: 1, borderColor: COLORS.glassBorder },
+    formCard:   { borderRadius: C_RADIUS.xxl, overflow: 'hidden' },
+    formCardBg: { ...StyleSheet.absoluteFillObject, backgroundColor: C.glass, borderRadius: C_RADIUS.xxl, borderWidth: 1, borderColor: C.glassBorder },
 
-  title:    { fontSize: 22, fontWeight: '800', color: COLORS.text, marginBottom: 6 },
-  subtitle: { fontSize: 14, color: COLORS.textMuted, marginBottom: 16 },
+    title:    { fontSize: 22, fontWeight: '800', color: C.text, marginBottom: 6 },
+    subtitle: { fontSize: 14, color: C.textMuted, marginBottom: 16 },
 
-  inputWrap: { borderRadius: RADIUS.xl, overflow: 'hidden', marginBottom: 24 },
-  inputBg:   { ...StyleSheet.absoluteFillObject, backgroundColor: COLORS.bgLayer, borderRadius: RADIUS.xl, borderWidth: 1, borderColor: COLORS.glassBorder },
-  input:     { padding: 18, fontSize: 18, color: COLORS.text, position: 'relative' },
+    inputWrap: { borderRadius: C_RADIUS.xl, overflow: 'hidden', marginBottom: 24 },
+    inputBg:   { ...StyleSheet.absoluteFillObject, backgroundColor: C.bgLayer, borderRadius: C_RADIUS.xl, borderWidth: 1, borderColor: C.glassBorder },
+    input:     { padding: 18, fontSize: 18, color: C.text, position: 'relative' },
 
-  roleTitle: { fontSize: 14, color: COLORS.textMuted, marginBottom: 12, fontWeight: '600' },
+    roleTitle: { fontSize: 14, color: C.textMuted, marginBottom: 12, fontWeight: '600' },
 
-  rolesRow: { flexDirection: 'row', gap: 10, marginBottom: 20 },
-  roleCard:    { flex: 1, borderRadius: RADIUS.xl, overflow: 'hidden' },
-  roleCardBg:  { ...StyleSheet.absoluteFillObject, backgroundColor: COLORS.glass, borderRadius: RADIUS.xl, borderWidth: 1, borderColor: COLORS.glassBorder },
-  roleCheck:   { position: 'absolute', top: 10, right: 10, width: 8, height: 8, borderRadius: 4 },
-  roleEmoji:   { fontSize: 28, marginBottom: 6 },
-  roleName:    { fontSize: 15, fontWeight: '700', color: COLORS.text, marginBottom: 4, textAlign: 'center' },
-  roleDesc:    { fontSize: 12, color: COLORS.textMuted, textAlign: 'center', lineHeight: 16 },
+    rolesRow: { flexDirection: 'row', gap: 10, marginBottom: 20 },
+    roleCard:    { flex: 1, borderRadius: C_RADIUS.xl, overflow: 'hidden' },
+    roleCardBg:  { ...StyleSheet.absoluteFillObject, backgroundColor: C.glass, borderRadius: C_RADIUS.xl, borderWidth: 1, borderColor: C.glassBorder },
+    roleCheck:   { position: 'absolute', top: 10, right: 10, width: 8, height: 8, borderRadius: 4 },
+    roleEmoji:   { fontSize: 28, marginBottom: 6 },
+    roleName:    { fontSize: 15, fontWeight: '700', color: C.text, marginBottom: 4, textAlign: 'center' },
+    roleDesc:    { fontSize: 12, color: C.textMuted, textAlign: 'center', lineHeight: 16 },
 
-  btn:     { borderRadius: RADIUS.xl, overflow: 'hidden', paddingVertical: 16, alignItems: 'center' },
-  btnText: { fontSize: 16, fontWeight: '700', color: '#fff', position: 'relative' },
-});
+    btn:     { borderRadius: C_RADIUS.xl, overflow: 'hidden', paddingVertical: 16, alignItems: 'center' },
+    btnText: { fontSize: 16, fontWeight: '700', color: '#fff', position: 'relative' },
+  });
+}

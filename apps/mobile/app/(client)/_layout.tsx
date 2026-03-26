@@ -1,38 +1,62 @@
+import { useMemo } from 'react';
 import { Tabs } from 'expo-router';
 import { View, Text, StyleSheet, Platform } from 'react-native';
 import { BlurView } from 'expo-blur';
-import { COLORS, RADIUS } from '../../src/constants/config';
+import { useAppTheme } from '../../src/hooks/useAppTheme';
+import { RADIUS } from '../../src/constants/config';
 
-function TabIcon({ icon, label, focused }: { icon: string; label: string; focused: boolean }) {
+function TabIcon({ icon, label, focused, accentColor, inactiveColor }: {
+  icon: string; label: string; focused: boolean;
+  accentColor: string; inactiveColor: string;
+}) {
   return (
-    <View style={styles.tabItem}>
-      {focused && <View style={styles.tabActivePill} />}
-      <Text style={[styles.tabIcon, focused && styles.tabIconActive]}>{icon}</Text>
-      <Text style={[styles.tabLabel, focused && styles.tabLabelActive]}>{label}</Text>
+    <View style={layout.tabItem}>
+      {focused && <View style={[layout.tabActivePill, { backgroundColor: accentColor }]} />}
+      <Text style={[layout.tabIcon, { opacity: focused ? 1 : 0.5 }]}>{icon}</Text>
+      <Text style={[layout.tabLabel, { color: focused ? accentColor : inactiveColor, fontWeight: focused ? '700' : '500' }]}>
+        {label}
+      </Text>
     </View>
   );
 }
 
 export default function ClientLayout() {
+  const { COLORS, isDark, blurTint } = useAppTheme();
+
+  const tabBarStyle = useMemo(() => ({
+    backgroundColor: COLORS.tabBar,
+    borderTopWidth: 1,
+    borderTopColor: COLORS.glassBorder,
+    height: Platform.OS === 'ios' ? 84 : 72,
+    paddingBottom: Platform.OS === 'ios' ? 24 : 8,
+    paddingTop: 10,
+    position: 'absolute' as const,
+  }), [COLORS]);
+
+  const screenOptions = useMemo(() => ({
+    headerShown: false,
+    tabBarShowLabel: false,
+    tabBarStyle,
+    tabBarBackground: () => (
+      <BlurView
+        intensity={60}
+        tint={blurTint}
+        style={[StyleSheet.absoluteFill, { borderTopLeftRadius: 24, borderTopRightRadius: 24, overflow: 'hidden' as const }]}
+      />
+    ),
+  }), [tabBarStyle, blurTint]);
+
+  const icon = (ico: string, lbl: string) => ({ focused }: { focused: boolean }) => (
+    <TabIcon icon={ico} label={lbl} focused={focused}
+      accentColor={COLORS.tabBarActive} inactiveColor={COLORS.tabBarInactive} />
+  );
+
   return (
-    <Tabs
-      screenOptions={{
-        headerShown: false,
-        tabBarStyle: styles.tabBar,
-        tabBarShowLabel: false,
-        tabBarBackground: () => (
-          <BlurView
-            intensity={60}
-            tint="dark"
-            style={[StyleSheet.absoluteFill, { borderTopLeftRadius: 24, borderTopRightRadius: 24, overflow: 'hidden' }]}
-          />
-        ),
-      }}
-    >
-      <Tabs.Screen name="index"     options={{ tabBarIcon: ({ focused }) => <TabIcon icon="⚡" label="Главная"  focused={focused} /> }} />
-      <Tabs.Screen name="tasks"     options={{ tabBarIcon: ({ focused }) => <TabIcon icon="📋" label="Заказы"   focused={focused} /> }} />
-      <Tabs.Screen name="executors" options={{ tabBarIcon: ({ focused }) => <TabIcon icon="🔍" label="Найти"    focused={focused} /> }} />
-      <Tabs.Screen name="profile"   options={{ tabBarIcon: ({ focused }) => <TabIcon icon="👤" label="Профиль"  focused={focused} /> }} />
+    <Tabs screenOptions={screenOptions}>
+      <Tabs.Screen name="index"     options={{ tabBarIcon: icon('⚡', 'Главная')  }} />
+      <Tabs.Screen name="tasks"     options={{ tabBarIcon: icon('📋', 'Заказы')   }} />
+      <Tabs.Screen name="executors" options={{ tabBarIcon: icon('🔍', 'Найти')    }} />
+      <Tabs.Screen name="profile"   options={{ tabBarIcon: icon('👤', 'Профиль')  }} />
       <Tabs.Screen name="voice"          options={{ href: null }} />
       <Tabs.Screen name="clarify"        options={{ href: null }} />
       <Tabs.Screen name="confirm"        options={{ href: null }} />
@@ -42,24 +66,9 @@ export default function ClientLayout() {
   );
 }
 
-const styles = StyleSheet.create({
-  tabBar: {
-    backgroundColor: 'rgba(13,11,30,0.85)',
-    borderTopWidth: 1,
-    borderTopColor: COLORS.glassBorder,
-    height: Platform.OS === 'ios' ? 84 : 72,
-    paddingBottom: Platform.OS === 'ios' ? 24 : 8,
-    paddingTop: 10,
-    position: 'absolute',
-  },
+const layout = StyleSheet.create({
   tabItem:       { alignItems: 'center', justifyContent: 'center', paddingHorizontal: 10 },
-  tabActivePill: {
-    position: 'absolute', top: -6,
-    width: 24, height: 3, borderRadius: 2,
-    backgroundColor: COLORS.primary,
-  },
-  tabIcon:       { fontSize: 20, marginBottom: 3, opacity: 0.5 },
-  tabIconActive: { opacity: 1 },
-  tabLabel:      { fontSize: 10, color: COLORS.tabBarInactive, fontWeight: '500' },
-  tabLabelActive:{ color: COLORS.tabBarActive, fontWeight: '700' },
+  tabActivePill: { position: 'absolute', top: -6, width: 24, height: 3, borderRadius: 2 },
+  tabIcon:       { fontSize: 20, marginBottom: 3 },
+  tabLabel:      { fontSize: 10 },
 });

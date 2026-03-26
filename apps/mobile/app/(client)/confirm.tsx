@@ -1,11 +1,12 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Alert, StatusBar } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
 import { useTaskStore } from '../../src/stores/taskStore';
-import { COLORS, RADIUS, GRADIENTS } from '../../src/constants/config';
+import { RADIUS, type AppColors } from '../../src/constants/config';
+import { useAppTheme } from '../../src/hooks/useAppTheme';
 
 const PAYMENT_METHODS = [
   { key: 'cash', label: 'Наличные', icon: '💵' },
@@ -17,6 +18,8 @@ export default function ConfirmScreen() {
   const { creation, confirmTask, resetCreation } = useTaskStore();
   const [paymentMethod, setPaymentMethod] = useState('cash');
   const [isConfirming, setIsConfirming] = useState(false);
+  const { COLORS, GRADIENTS, isDark, blurTint } = useAppTheme();
+  const styles = useMemo(() => makeStyles(COLORS), [COLORS]);
 
   const parsed = creation.parsed;
   if (!parsed) return null;
@@ -40,7 +43,7 @@ export default function ConfirmScreen() {
 
   return (
     <View style={styles.root}>
-      <StatusBar barStyle="light-content" />
+      <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
       <LinearGradient colors={GRADIENTS.bg} style={StyleSheet.absoluteFill} />
       <View style={styles.glowAccent} />
 
@@ -48,7 +51,7 @@ export default function ConfirmScreen() {
         {/* Back */}
         <View style={styles.topBar}>
           <TouchableOpacity onPress={handleCancel} style={styles.backBtn}>
-            <BlurView intensity={20} tint="dark" style={StyleSheet.absoluteFill} />
+            <BlurView intensity={20} tint={blurTint} style={StyleSheet.absoluteFill} />
             <View style={styles.backBtnBg} />
             <Text style={styles.backIcon}>←</Text>
           </TouchableOpacity>
@@ -60,19 +63,19 @@ export default function ConfirmScreen() {
 
           {/* Task details card */}
           <View style={styles.card}>
-            <BlurView intensity={18} tint="dark" style={StyleSheet.absoluteFill} />
+            <BlurView intensity={18} tint={blurTint} style={StyleSheet.absoluteFill} />
             <View style={styles.cardBg} />
             <View style={{ position: 'relative', padding: 20 }}>
-              {parsed.category && <DetailRow label="📌 Категория"   value={parsed.category} />}
-              <DetailRow label="📦 Что нужно"   value={parsed.item_description ?? '—'} />
-              {parsed.from_location && <DetailRow label="🏪 Откуда"  value={parsed.from_location.address} />}
-              <DetailRow label="📍 Куда"         value={parsed.to_location?.address ?? '—'} last />
+              {parsed.category && <DetailRow label="📌 Категория"   value={parsed.category} styles={styles} />}
+              <DetailRow label="📦 Что нужно"   value={parsed.item_description ?? '—'} styles={styles} />
+              {parsed.from_location && <DetailRow label="🏪 Откуда"  value={parsed.from_location.address} styles={styles} />}
+              <DetailRow label="📍 Куда"         value={parsed.to_location?.address ?? '—'} last styles={styles} />
             </View>
           </View>
 
           {/* Price hero */}
           <View style={styles.priceCard}>
-            <BlurView intensity={25} tint="dark" style={StyleSheet.absoluteFill} />
+            <BlurView intensity={25} tint={blurTint} style={StyleSheet.absoluteFill} />
             <LinearGradient
               colors={['rgba(139,92,246,0.35)', 'rgba(6,182,212,0.20)']}
               start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
@@ -98,7 +101,7 @@ export default function ConfirmScreen() {
                 onPress={() => setPaymentMethod(m.key)}
                 activeOpacity={0.8}
               >
-                <BlurView intensity={18} tint="dark" style={StyleSheet.absoluteFill} />
+                <BlurView intensity={18} tint={blurTint} style={StyleSheet.absoluteFill} />
                 <View style={[
                   styles.paymentBg,
                   paymentMethod === m.key && { backgroundColor: COLORS.glassViolet, borderColor: COLORS.primary + '60' },
@@ -138,7 +141,7 @@ export default function ConfirmScreen() {
   );
 }
 
-function DetailRow({ label, value, last }: { label: string; value: string; last?: boolean }) {
+function DetailRow({ label, value, last, styles }: { label: string; value: string; last?: boolean; styles: any }) {
   return (
     <View style={[styles.row, !last && styles.rowDivider]}>
       <Text style={styles.rowLabel}>{label}</Text>
@@ -147,55 +150,57 @@ function DetailRow({ label, value, last }: { label: string; value: string; last?
   );
 }
 
-const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: COLORS.bg },
-  safe: { flex: 1 },
-  glowAccent: {
-    position: 'absolute', top: '20%', right: -40,
-    width: 200, height: 200, borderRadius: 100,
-    backgroundColor: 'rgba(139,92,246,0.15)',
-  },
+function makeStyles(C: AppColors, C_RADIUS = RADIUS) {
+  return StyleSheet.create({
+    root: { flex: 1, backgroundColor: C.bg },
+    safe: { flex: 1 },
+    glowAccent: {
+      position: 'absolute', top: '20%', right: -40,
+      width: 200, height: 200, borderRadius: 100,
+      backgroundColor: 'rgba(139,92,246,0.15)',
+    },
 
-  topBar:    { paddingHorizontal: 20, paddingTop: 8 },
-  backBtn:   { width: 38, height: 38, borderRadius: 19, overflow: 'hidden', alignItems: 'center', justifyContent: 'center' },
-  backBtnBg: { ...StyleSheet.absoluteFillObject, backgroundColor: COLORS.glass, borderRadius: 19, borderWidth: 1, borderColor: COLORS.glassBorder },
-  backIcon:  { color: COLORS.text, fontSize: 18, position: 'relative' },
+    topBar:    { paddingHorizontal: 20, paddingTop: 8 },
+    backBtn:   { width: 38, height: 38, borderRadius: 19, overflow: 'hidden', alignItems: 'center', justifyContent: 'center' },
+    backBtnBg: { ...StyleSheet.absoluteFillObject, backgroundColor: C.glass, borderRadius: 19, borderWidth: 1, borderColor: C.glassBorder },
+    backIcon:  { color: C.text, fontSize: 18, position: 'relative' },
 
-  scroll: { paddingHorizontal: 20, paddingTop: 8 },
+    scroll: { paddingHorizontal: 20, paddingTop: 8 },
 
-  title:    { fontSize: 26, fontWeight: '800', color: COLORS.text, marginBottom: 6 },
-  subtitle: { fontSize: 15, color: COLORS.textMuted, marginBottom: 20, lineHeight: 22 },
+    title:    { fontSize: 26, fontWeight: '800', color: C.text, marginBottom: 6 },
+    subtitle: { fontSize: 15, color: C.textMuted, marginBottom: 20, lineHeight: 22 },
 
-  card:   { borderRadius: RADIUS.xl, overflow: 'hidden', marginBottom: 16 },
-  cardBg: { ...StyleSheet.absoluteFillObject, backgroundColor: COLORS.glass, borderRadius: RADIUS.xl, borderWidth: 1, borderColor: COLORS.glassBorder },
+    card:   { borderRadius: C_RADIUS.xl, overflow: 'hidden', marginBottom: 16 },
+    cardBg: { ...StyleSheet.absoluteFillObject, backgroundColor: C.glass, borderRadius: C_RADIUS.xl, borderWidth: 1, borderColor: C.glassBorder },
 
-  row:        { flexDirection: 'row', paddingVertical: 10 },
-  rowDivider: { borderBottomWidth: 1, borderBottomColor: COLORS.divider },
-  rowLabel:   { flex: 1, fontSize: 14, color: COLORS.textMuted },
-  rowValue:   { flex: 2, fontSize: 14, fontWeight: '500', color: COLORS.text },
+    row:        { flexDirection: 'row', paddingVertical: 10 },
+    rowDivider: { borderBottomWidth: 1, borderBottomColor: C.divider },
+    rowLabel:   { flex: 1, fontSize: 14, color: C.textMuted },
+    rowValue:   { flex: 2, fontSize: 14, fontWeight: '500', color: C.text },
 
-  priceCard:   { borderRadius: RADIUS.xxl, overflow: 'hidden', marginBottom: 20 },
-  priceBorder: { ...StyleSheet.absoluteFillObject, borderRadius: RADIUS.xxl, borderWidth: 1, borderColor: COLORS.glassBorder },
-  priceLabel:  { fontSize: 13, color: COLORS.textMuted, marginBottom: 4 },
-  priceValue:  { fontSize: 44, fontWeight: '800', color: COLORS.text, marginBottom: 8 },
-  aiPill: {
-    backgroundColor: COLORS.glassViolet, borderRadius: RADIUS.full,
-    paddingHorizontal: 12, paddingVertical: 4,
-    borderWidth: 1, borderColor: COLORS.primary + '40',
-  },
-  aiPillText: { fontSize: 12, color: COLORS.primaryLight, fontWeight: '600' },
+    priceCard:   { borderRadius: C_RADIUS.xxl, overflow: 'hidden', marginBottom: 20 },
+    priceBorder: { ...StyleSheet.absoluteFillObject, borderRadius: C_RADIUS.xxl, borderWidth: 1, borderColor: C.glassBorder },
+    priceLabel:  { fontSize: 13, color: C.textMuted, marginBottom: 4 },
+    priceValue:  { fontSize: 44, fontWeight: '800', color: C.text, marginBottom: 8 },
+    aiPill: {
+      backgroundColor: C.glassViolet, borderRadius: C_RADIUS.full,
+      paddingHorizontal: 12, paddingVertical: 4,
+      borderWidth: 1, borderColor: C.primary + '40',
+    },
+    aiPillText: { fontSize: 12, color: C.primaryLight, fontWeight: '600' },
 
-  sectionTitle: { fontSize: 15, fontWeight: '700', color: COLORS.text, marginBottom: 12 },
-  paymentRow:   { flexDirection: 'row', gap: 12, marginBottom: 24 },
-  paymentBtn:   { flex: 1, borderRadius: RADIUS.xl, overflow: 'hidden', paddingVertical: 16, alignItems: 'center' },
-  paymentBg:    { ...StyleSheet.absoluteFillObject, backgroundColor: COLORS.glass, borderRadius: RADIUS.xl, borderWidth: 1, borderColor: COLORS.glassBorder },
-  paymentActiveGlow: { ...StyleSheet.absoluteFillObject, opacity: 0.08 },
-  paymentIcon:  { fontSize: 26, marginBottom: 4, position: 'relative' },
-  paymentLabel: { fontSize: 14, color: COLORS.text, position: 'relative' },
+    sectionTitle: { fontSize: 15, fontWeight: '700', color: C.text, marginBottom: 12 },
+    paymentRow:   { flexDirection: 'row', gap: 12, marginBottom: 24 },
+    paymentBtn:   { flex: 1, borderRadius: C_RADIUS.xl, overflow: 'hidden', paddingVertical: 16, alignItems: 'center' },
+    paymentBg:    { ...StyleSheet.absoluteFillObject, backgroundColor: C.glass, borderRadius: C_RADIUS.xl, borderWidth: 1, borderColor: C.glassBorder },
+    paymentActiveGlow: { ...StyleSheet.absoluteFillObject, opacity: 0.08 },
+    paymentIcon:  { fontSize: 26, marginBottom: 4, position: 'relative' },
+    paymentLabel: { fontSize: 14, color: C.text, position: 'relative' },
 
-  confirmBtn:  { borderRadius: RADIUS.xl, overflow: 'hidden', paddingVertical: 16, alignItems: 'center', marginBottom: 12 },
-  confirmText: { fontSize: 16, fontWeight: '700', color: '#fff', position: 'relative' },
+    confirmBtn:  { borderRadius: C_RADIUS.xl, overflow: 'hidden', paddingVertical: 16, alignItems: 'center', marginBottom: 12 },
+    confirmText: { fontSize: 16, fontWeight: '700', color: '#fff', position: 'relative' },
 
-  cancelBtn:  { paddingVertical: 14, alignItems: 'center' },
-  cancelText: { color: COLORS.textMuted, fontSize: 15 },
-});
+    cancelBtn:  { paddingVertical: 14, alignItems: 'center' },
+    cancelText: { color: C.textMuted, fontSize: 15 },
+  });
+}

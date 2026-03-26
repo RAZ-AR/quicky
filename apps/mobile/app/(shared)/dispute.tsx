@@ -1,11 +1,12 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, TextInput, Alert, ScrollView, StatusBar, KeyboardAvoidingView, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
 import { api } from '../../src/services/api';
-import { COLORS, RADIUS, GRADIENTS } from '../../src/constants/config';
+import { RADIUS, type AppColors } from '../../src/constants/config';
+import { useAppTheme } from '../../src/hooks/useAppTheme';
 
 const DISPUTE_TYPES = [
   { key: 'not_delivered', label: '📦 Товар не доставлен' },
@@ -21,6 +22,8 @@ export default function DisputeScreen() {
   const [disputeType, setDisputeType] = useState<string | null>(null);
   const [description, setDescription] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const { COLORS, GRADIENTS, isDark, blurTint } = useAppTheme();
+  const styles = useMemo(() => makeStyles(COLORS), [COLORS]);
 
   const canSubmit = !!disputeType && description.trim().length > 0 && !isSubmitting;
 
@@ -42,7 +45,7 @@ export default function DisputeScreen() {
 
   return (
     <View style={styles.root}>
-      <StatusBar barStyle="light-content" />
+      <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
       <LinearGradient colors={GRADIENTS.bg} style={StyleSheet.absoluteFill} />
       <View style={styles.glowDanger} />
 
@@ -52,7 +55,7 @@ export default function DisputeScreen() {
           {/* Header */}
           <View style={styles.header}>
             <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
-              <BlurView intensity={20} tint="dark" style={StyleSheet.absoluteFill} />
+              <BlurView intensity={20} tint={blurTint} style={StyleSheet.absoluteFill} />
               <View style={styles.backBtnBg} />
               <Text style={styles.backIcon}>←</Text>
             </TouchableOpacity>
@@ -74,7 +77,7 @@ export default function DisputeScreen() {
                   onPress={() => setDisputeType(d.key)}
                   activeOpacity={0.8}
                 >
-                  <BlurView intensity={18} tint="dark" style={StyleSheet.absoluteFill} />
+                  <BlurView intensity={18} tint={blurTint} style={StyleSheet.absoluteFill} />
                   <View style={[
                     styles.typeBg,
                     disputeType === d.key && { backgroundColor: COLORS.dangerGlow, borderColor: COLORS.danger + '60' },
@@ -90,7 +93,7 @@ export default function DisputeScreen() {
             {/* Description */}
             <Text style={styles.inputLabel}>Опишите подробнее</Text>
             <View style={styles.inputWrap}>
-              <BlurView intensity={18} tint="dark" style={StyleSheet.absoluteFill} />
+              <BlurView intensity={18} tint={blurTint} style={StyleSheet.absoluteFill} />
               <View style={styles.inputBg} />
               <TextInput
                 style={styles.textArea}
@@ -123,38 +126,40 @@ export default function DisputeScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: COLORS.bg },
-  safe: { flex: 1 },
-  kav:  { flex: 1 },
-  glowDanger: {
-    position: 'absolute', top: '20%', right: -40,
-    width: 220, height: 220, borderRadius: 110,
-    backgroundColor: 'rgba(239,68,68,0.10)',
-  },
+function makeStyles(C: AppColors, C_RADIUS = RADIUS) {
+  return StyleSheet.create({
+    root: { flex: 1, backgroundColor: C.bg },
+    safe: { flex: 1 },
+    kav:  { flex: 1 },
+    glowDanger: {
+      position: 'absolute', top: '20%', right: -40,
+      width: 220, height: 220, borderRadius: 110,
+      backgroundColor: 'rgba(239,68,68,0.10)',
+    },
 
-  header:     { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingTop: 8, paddingBottom: 12 },
-  backBtn:    { width: 38, height: 38, borderRadius: 19, overflow: 'hidden', alignItems: 'center', justifyContent: 'center' },
-  backBtnBg:  { ...StyleSheet.absoluteFillObject, backgroundColor: COLORS.glass, borderRadius: 19, borderWidth: 1, borderColor: COLORS.glassBorder },
-  backIcon:   { color: COLORS.text, fontSize: 18, position: 'relative' },
-  headerTitle:{ flex: 1, fontSize: 18, fontWeight: '700', color: COLORS.text, textAlign: 'center' },
+    header:     { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingTop: 8, paddingBottom: 12 },
+    backBtn:    { width: 38, height: 38, borderRadius: 19, overflow: 'hidden', alignItems: 'center', justifyContent: 'center' },
+    backBtnBg:  { ...StyleSheet.absoluteFillObject, backgroundColor: C.glass, borderRadius: 19, borderWidth: 1, borderColor: C.glassBorder },
+    backIcon:   { color: C.text, fontSize: 18, position: 'relative' },
+    headerTitle:{ flex: 1, fontSize: 18, fontWeight: '700', color: C.text, textAlign: 'center' },
 
-  scroll: { paddingHorizontal: 20, paddingTop: 4 },
+    scroll: { paddingHorizontal: 20, paddingTop: 4 },
 
-  title:    { fontSize: 24, fontWeight: '800', color: COLORS.text, marginBottom: 6 },
-  subtitle: { fontSize: 15, color: COLORS.textMuted, marginBottom: 20, lineHeight: 22 },
+    title:    { fontSize: 24, fontWeight: '800', color: C.text, marginBottom: 6 },
+    subtitle: { fontSize: 15, color: C.textMuted, marginBottom: 20, lineHeight: 22 },
 
-  typeList: { gap: 8, marginBottom: 24 },
-  typeBtn:  { borderRadius: RADIUS.lg, overflow: 'hidden' },
-  typeBg:   { ...StyleSheet.absoluteFillObject, backgroundColor: COLORS.glass, borderRadius: RADIUS.lg, borderWidth: 1, borderColor: COLORS.glassBorder },
-  typeCheck:{ position: 'absolute', right: 18, top: '50%', width: 8, height: 8, borderRadius: 4, backgroundColor: COLORS.danger },
-  typeText: { fontSize: 16, color: COLORS.text, padding: 16, position: 'relative' },
+    typeList: { gap: 8, marginBottom: 24 },
+    typeBtn:  { borderRadius: C_RADIUS.lg, overflow: 'hidden' },
+    typeBg:   { ...StyleSheet.absoluteFillObject, backgroundColor: C.glass, borderRadius: C_RADIUS.lg, borderWidth: 1, borderColor: C.glassBorder },
+    typeCheck:{ position: 'absolute', right: 18, top: '50%', width: 8, height: 8, borderRadius: 4, backgroundColor: C.danger },
+    typeText: { fontSize: 16, color: C.text, padding: 16, position: 'relative' },
 
-  inputLabel: { fontSize: 15, fontWeight: '600', color: COLORS.text, marginBottom: 10 },
-  inputWrap:  { borderRadius: RADIUS.xl, overflow: 'hidden', marginBottom: 24 },
-  inputBg:    { ...StyleSheet.absoluteFillObject, backgroundColor: COLORS.glass, borderRadius: RADIUS.xl, borderWidth: 1, borderColor: COLORS.glassBorder },
-  textArea:   { padding: 18, fontSize: 15, color: COLORS.text, height: 140, position: 'relative', textAlignVertical: 'top' },
+    inputLabel: { fontSize: 15, fontWeight: '600', color: C.text, marginBottom: 10 },
+    inputWrap:  { borderRadius: C_RADIUS.xl, overflow: 'hidden', marginBottom: 24 },
+    inputBg:    { ...StyleSheet.absoluteFillObject, backgroundColor: C.glass, borderRadius: C_RADIUS.xl, borderWidth: 1, borderColor: C.glassBorder },
+    textArea:   { padding: 18, fontSize: 15, color: C.text, height: 140, position: 'relative', textAlignVertical: 'top' },
 
-  submitBtn:  { borderRadius: RADIUS.xl, overflow: 'hidden', paddingVertical: 16, alignItems: 'center' },
-  submitText: { fontSize: 16, fontWeight: '700', color: '#fff', position: 'relative' },
-});
+    submitBtn:  { borderRadius: C_RADIUS.xl, overflow: 'hidden', paddingVertical: 16, alignItems: 'center' },
+    submitText: { fontSize: 16, fontWeight: '700', color: '#fff', position: 'relative' },
+  });
+}

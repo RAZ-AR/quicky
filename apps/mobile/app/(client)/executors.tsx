@@ -1,10 +1,11 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, TextInput, ActivityIndicator, StatusBar } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
 import { api } from '../../src/services/api';
-import { COLORS, RADIUS, GRADIENTS } from '../../src/constants/config';
+import { RADIUS, type AppColors } from '../../src/constants/config';
+import { useAppTheme } from '../../src/hooks/useAppTheme';
 
 interface ExecutorUser {
   id: string; name: string; phone: string;
@@ -16,6 +17,8 @@ export default function ClientExecutorsScreen() {
   const [executors, setExecutors] = useState<ExecutorUser[]>([]);
   const [loading, setLoading]     = useState(false);
   const [search, setSearch]       = useState('');
+  const { COLORS, GRADIENTS, isDark, blurTint } = useAppTheme();
+  const styles = useMemo(() => makeStyles(COLORS), [COLORS]);
 
   useEffect(() => {
     setLoading(true);
@@ -29,7 +32,7 @@ export default function ClientExecutorsScreen() {
 
   const renderItem = ({ item }: { item: ExecutorUser }) => (
     <View style={styles.card}>
-      <BlurView intensity={18} tint="dark" style={StyleSheet.absoluteFill} />
+      <BlurView intensity={18} tint={blurTint} style={StyleSheet.absoluteFill} />
       <View style={styles.cardBg} />
       <View style={{ position: 'relative', flexDirection: 'row', alignItems: 'center', padding: 14 }}>
         {/* Avatar */}
@@ -48,7 +51,7 @@ export default function ClientExecutorsScreen() {
         </View>
 
         <TouchableOpacity style={styles.contactBtn} activeOpacity={0.85}>
-          <BlurView intensity={18} tint="dark" style={StyleSheet.absoluteFill} />
+          <BlurView intensity={18} tint={blurTint} style={StyleSheet.absoluteFill} />
           <View style={styles.contactBtnBg} />
           <Text style={styles.contactBtnText}>Написать</Text>
         </TouchableOpacity>
@@ -58,7 +61,7 @@ export default function ClientExecutorsScreen() {
 
   return (
     <View style={styles.root}>
-      <StatusBar barStyle="light-content" />
+      <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
       <LinearGradient colors={GRADIENTS.bg} style={StyleSheet.absoluteFill} />
       <View style={styles.glowTop} />
 
@@ -69,7 +72,7 @@ export default function ClientExecutorsScreen() {
 
         {/* Search */}
         <View style={styles.searchWrap}>
-          <BlurView intensity={18} tint="dark" style={StyleSheet.absoluteFill} />
+          <BlurView intensity={18} tint={blurTint} style={StyleSheet.absoluteFill} />
           <View style={styles.searchBg} />
           <Text style={styles.searchIcon}>🔍</Text>
           <TextInput
@@ -104,44 +107,46 @@ export default function ClientExecutorsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: COLORS.bg },
-  safe: { flex: 1 },
-  glowTop: {
-    position: 'absolute', top: -40, left: '20%',
-    width: 200, height: 200, borderRadius: 100,
-    backgroundColor: 'rgba(6,182,212,0.10)',
-  },
+function makeStyles(C: AppColors, C_RADIUS = RADIUS) {
+  return StyleSheet.create({
+    root: { flex: 1, backgroundColor: C.bg },
+    safe: { flex: 1 },
+    glowTop: {
+      position: 'absolute', top: -40, left: '20%',
+      width: 200, height: 200, borderRadius: 100,
+      backgroundColor: 'rgba(6,182,212,0.10)',
+    },
 
-  header: { paddingHorizontal: 20, paddingTop: 8, paddingBottom: 12 },
-  title:  { fontSize: 24, fontWeight: '800', color: COLORS.text },
+    header: { paddingHorizontal: 20, paddingTop: 8, paddingBottom: 12 },
+    title:  { fontSize: 24, fontWeight: '800', color: C.text },
 
-  searchWrap:  { flexDirection: 'row', alignItems: 'center', marginHorizontal: 16, marginBottom: 12, borderRadius: RADIUS.xl, overflow: 'hidden', paddingHorizontal: 14, paddingVertical: 4 },
-  searchBg:    { ...StyleSheet.absoluteFillObject, backgroundColor: COLORS.glass, borderRadius: RADIUS.xl, borderWidth: 1, borderColor: COLORS.glassBorder },
-  searchIcon:  { fontSize: 16, marginRight: 8 },
-  searchInput: { flex: 1, fontSize: 15, color: COLORS.text, paddingVertical: 10, position: 'relative' },
+    searchWrap:  { flexDirection: 'row', alignItems: 'center', marginHorizontal: 16, marginBottom: 12, borderRadius: C_RADIUS.xl, overflow: 'hidden', paddingHorizontal: 14, paddingVertical: 4 },
+    searchBg:    { ...StyleSheet.absoluteFillObject, backgroundColor: C.glass, borderRadius: C_RADIUS.xl, borderWidth: 1, borderColor: C.glassBorder },
+    searchIcon:  { fontSize: 16, marginRight: 8 },
+    searchInput: { flex: 1, fontSize: 15, color: C.text, paddingVertical: 10, position: 'relative' },
 
-  list: { paddingHorizontal: 16, paddingBottom: 100 },
+    list: { paddingHorizontal: 16, paddingBottom: 100 },
 
-  card:   { borderRadius: RADIUS.xl, overflow: 'hidden', marginBottom: 8 },
-  cardBg: { ...StyleSheet.absoluteFillObject, backgroundColor: COLORS.glass, borderRadius: RADIUS.xl, borderWidth: 1, borderColor: COLORS.glassBorder },
+    card:   { borderRadius: C_RADIUS.xl, overflow: 'hidden', marginBottom: 8 },
+    cardBg: { ...StyleSheet.absoluteFillObject, backgroundColor: C.glass, borderRadius: C_RADIUS.xl, borderWidth: 1, borderColor: C.glassBorder },
 
-  avatarWrap:  { width: 46, height: 46, borderRadius: 23, overflow: 'hidden', alignItems: 'center', justifyContent: 'center', marginRight: 12 },
-  avatarBorder:{ ...StyleSheet.absoluteFillObject, borderRadius: 23, borderWidth: 1, borderColor: 'rgba(255,255,255,0.15)' },
-  avatarText:  { color: '#fff', fontWeight: '700', fontSize: 18, position: 'relative' },
-  onlineDot:   { position: 'absolute', bottom: 2, right: 2, width: 10, height: 10, borderRadius: 5, backgroundColor: COLORS.success, borderWidth: 2, borderColor: COLORS.bg },
+    avatarWrap:  { width: 46, height: 46, borderRadius: 23, overflow: 'hidden', alignItems: 'center', justifyContent: 'center', marginRight: 12 },
+    avatarBorder:{ ...StyleSheet.absoluteFillObject, borderRadius: 23, borderWidth: 1, borderColor: 'rgba(255,255,255,0.15)' },
+    avatarText:  { color: '#fff', fontWeight: '700', fontSize: 18, position: 'relative' },
+    onlineDot:   { position: 'absolute', bottom: 2, right: 2, width: 10, height: 10, borderRadius: 5, backgroundColor: C.success, borderWidth: 2, borderColor: C.bg },
 
-  info:  { flex: 1 },
-  name:  { fontSize: 15, fontWeight: '600', color: COLORS.text, marginBottom: 3 },
-  stats: { fontSize: 13, color: COLORS.textMuted, marginBottom: 2 },
-  rate:  { fontSize: 12, color: COLORS.textLight },
+    info:  { flex: 1 },
+    name:  { fontSize: 15, fontWeight: '600', color: C.text, marginBottom: 3 },
+    stats: { fontSize: 13, color: C.textMuted, marginBottom: 2 },
+    rate:  { fontSize: 12, color: C.textLight },
 
-  contactBtn:    { borderRadius: RADIUS.lg, overflow: 'hidden', paddingHorizontal: 14, paddingVertical: 8 },
-  contactBtnBg:  { ...StyleSheet.absoluteFillObject, backgroundColor: COLORS.glassViolet, borderRadius: RADIUS.lg, borderWidth: 1, borderColor: COLORS.primary + '40' },
-  contactBtnText:{ color: COLORS.primaryLight, fontWeight: '600', fontSize: 13, position: 'relative' },
+    contactBtn:    { borderRadius: C_RADIUS.lg, overflow: 'hidden', paddingHorizontal: 14, paddingVertical: 8 },
+    contactBtnBg:  { ...StyleSheet.absoluteFillObject, backgroundColor: C.glassViolet, borderRadius: C_RADIUS.lg, borderWidth: 1, borderColor: C.primary + '40' },
+    contactBtnText:{ color: C.primaryLight, fontWeight: '600', fontSize: 13, position: 'relative' },
 
-  empty:     { alignItems: 'center', paddingTop: 80 },
-  emptyIcon: { fontSize: 48, marginBottom: 16 },
-  emptyText: { fontSize: 16, fontWeight: '700', color: COLORS.text, marginBottom: 8 },
-  emptyHint: { fontSize: 14, color: COLORS.textMuted, textAlign: 'center' },
-});
+    empty:     { alignItems: 'center', paddingTop: 80 },
+    emptyIcon: { fontSize: 48, marginBottom: 16 },
+    emptyText: { fontSize: 16, fontWeight: '700', color: C.text, marginBottom: 8 },
+    emptyHint: { fontSize: 14, color: C.textMuted, textAlign: 'center' },
+  });
+}
