@@ -1,172 +1,199 @@
 import { useState, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, Alert } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, StatusBar, KeyboardAvoidingView, Platform } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
+import { LinearGradient } from 'expo-linear-gradient';
+import { BlurView } from 'expo-blur';
 import { useTaskStore } from '../../src/stores/taskStore';
-import { COLORS } from '../../src/constants/config';
+import { COLORS, RADIUS, GRADIENTS } from '../../src/constants/config';
 
 export default function ClarifyScreen() {
   const [answer, setAnswer] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [manualText, setManualText] = useState('');
   const router = useRouter();
   const { mode } = useLocalSearchParams<{ mode?: string }>();
   const { creation, parseText, answerClarification, isCreating } = useTaskStore();
-  const [manualText, setManualText] = useState('');
 
-  const question = creation.nextQuestion;
+  const question    = creation.nextQuestion;
   const isManualMode = mode === 'text' && !creation.taskId;
 
   const handleManualSubmit = async () => {
     if (!manualText.trim()) return;
-    try {
-      await parseText(manualText.trim());
-    } catch {
-      Alert.alert('Ошибка', 'Не удалось обработать задание');
-    }
+    try { await parseText(manualText.trim()); }
+    catch { Alert.alert('Ошибка', 'Не удалось обработать задание'); }
   };
 
   const handleAnswer = async () => {
     if (!question) return;
     setIsSubmitting(true);
-    try {
-      await answerClarification(question.field, answer);
-      setAnswer('');
-    } catch {
-      Alert.alert('Ошибка', 'Не удалось отправить ответ');
-    } finally {
-      setIsSubmitting(false);
-    }
+    try { await answerClarification(question.field, answer); setAnswer(''); }
+    catch { Alert.alert('Ошибка', 'Не удалось отправить ответ'); }
+    finally { setIsSubmitting(false); }
   };
 
   const handleSkip = async () => {
     if (!question) return;
     setIsSubmitting(true);
-    try {
-      await answerClarification(question.field, null, true);
-      setAnswer('');
-    } finally {
-      setIsSubmitting(false);
-    }
+    try { await answerClarification(question.field, null, true); setAnswer(''); }
+    finally { setIsSubmitting(false); }
   };
 
-  // Переходим дальше когда вопросов больше нет
   useEffect(() => {
-    if (creation.taskId && !creation.nextQuestion) {
-      router.replace('/(client)/confirm');
-    }
+    if (creation.taskId && !creation.nextQuestion) router.replace('/(client)/confirm');
   }, [creation.nextQuestion, creation.taskId]);
 
-  if (isManualMode) {
-    return (
-      <SafeAreaView style={styles.safe}>
-        <View style={styles.container}>
-          <Text style={styles.title}>Опишите задание</Text>
-          <Text style={styles.subtitle}>Например: «Купи молоко в Lidl и привези домой»</Text>
-          <TextInput
-            style={[styles.input, styles.textArea]}
-            value={manualText}
-            onChangeText={setManualText}
-            placeholder="Что нужно сделать?"
-            multiline
-            numberOfLines={4}
-            autoFocus
-            textAlignVertical="top"
-          />
-          <TouchableOpacity
-            style={[styles.btn, (!manualText.trim() || isCreating) && styles.btnDisabled]}
-            onPress={handleManualSubmit}
-            disabled={!manualText.trim() || isCreating}
-          >
-            <Text style={styles.btnText}>{isCreating ? 'Обрабатываем...' : 'Далее'}</Text>
-          </TouchableOpacity>
-        </View>
-      </SafeAreaView>
-    );
-  }
-
-  if (!question) return null;
-
   return (
-    <SafeAreaView style={styles.safe}>
-      <View style={styles.container}>
-        <View style={styles.progressRow}>
-          {[0, 1, 2].map((i) => (
-            <View key={i} style={[styles.dot, i === 0 && styles.dotActive]} />
-          ))}
-        </View>
+    <View style={styles.root}>
+      <StatusBar barStyle="light-content" />
+      <LinearGradient colors={GRADIENTS.bg} style={StyleSheet.absoluteFill} />
+      <View style={styles.glowCenter} />
 
-        <Text style={styles.title}>{question.question_text}</Text>
+      <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
+        <KeyboardAvoidingView style={styles.kav} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
 
-        {question.options ? (
-          <View style={styles.optionsList}>
-            {question.options.map((opt) => (
-              <TouchableOpacity
-                key={opt}
-                style={[styles.optionBtn, answer === opt && styles.optionBtnActive]}
-                onPress={() => setAnswer(opt)}
-              >
-                <Text style={[styles.optionText, answer === opt && styles.optionTextActive]}>
-                  {opt}
-                </Text>
-              </TouchableOpacity>
-            ))}
+          {/* Back */}
+          <View style={styles.topBar}>
+            <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
+              <BlurView intensity={20} tint="dark" style={StyleSheet.absoluteFill} />
+              <View style={styles.backBtnBg} />
+              <Text style={styles.backIcon}>←</Text>
+            </TouchableOpacity>
           </View>
-        ) : (
-          <TextInput
-            style={styles.input}
-            value={answer}
-            onChangeText={setAnswer}
-            placeholder="Введите ответ..."
-            autoFocus
-            returnKeyType="done"
-            onSubmitEditing={handleAnswer}
-            keyboardType={question.input_type === 'number' ? 'number-pad' : 'default'}
-          />
-        )}
 
-        <TouchableOpacity
-          style={[styles.btn, (!answer || isSubmitting) && styles.btnDisabled]}
-          onPress={handleAnswer}
-          disabled={!answer || isSubmitting}
-        >
-          <Text style={styles.btnText}>{isSubmitting ? 'Отправляем...' : 'Ответить'}</Text>
-        </TouchableOpacity>
+          <View style={styles.container}>
 
-        <TouchableOpacity onPress={handleSkip} style={styles.skipBtn} disabled={isSubmitting}>
-          <Text style={styles.skipText}>Пропустить</Text>
-        </TouchableOpacity>
-      </View>
-    </SafeAreaView>
+            {/* Progress dots (for clarify mode) */}
+            {!isManualMode && question && (
+              <View style={styles.progressRow}>
+                {[0, 1, 2].map((i) => (
+                  <View key={i} style={[styles.dot, i === 0 && styles.dotActive]} />
+                ))}
+              </View>
+            )}
+
+            {/* Title */}
+            <Text style={styles.title}>
+              {isManualMode ? 'Опишите задание' : question?.question_text ?? ''}
+            </Text>
+            {isManualMode && (
+              <Text style={styles.subtitle}>Например: «Купи молоко в Lidl и привези домой»</Text>
+            )}
+
+            {/* Input or options */}
+            {isManualMode ? (
+              <View style={styles.inputWrap}>
+                <BlurView intensity={18} tint="dark" style={StyleSheet.absoluteFill} />
+                <View style={styles.inputBg} />
+                <TextInput
+                  style={styles.textArea}
+                  value={manualText}
+                  onChangeText={setManualText}
+                  placeholder="Что нужно сделать?"
+                  placeholderTextColor={COLORS.textLight}
+                  multiline
+                  numberOfLines={4}
+                  autoFocus
+                  textAlignVertical="top"
+                />
+              </View>
+            ) : question?.options ? (
+              <View style={styles.optionsList}>
+                {question.options.map((opt) => (
+                  <TouchableOpacity
+                    key={opt}
+                    style={styles.optionBtn}
+                    onPress={() => setAnswer(opt)}
+                    activeOpacity={0.8}
+                  >
+                    <BlurView intensity={18} tint="dark" style={StyleSheet.absoluteFill} />
+                    <View style={[
+                      styles.optionBg,
+                      answer === opt && { backgroundColor: COLORS.glassViolet, borderColor: COLORS.primary + '60' },
+                    ]} />
+                    {answer === opt && <View style={styles.optionCheck} />}
+                    <Text style={[styles.optionText, answer === opt && { color: COLORS.primaryLight, fontWeight: '600' }]}>
+                      {opt}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            ) : (
+              <View style={styles.inputWrap}>
+                <BlurView intensity={18} tint="dark" style={StyleSheet.absoluteFill} />
+                <View style={styles.inputBg} />
+                <TextInput
+                  style={styles.input}
+                  value={answer}
+                  onChangeText={setAnswer}
+                  placeholder="Введите ответ..."
+                  placeholderTextColor={COLORS.textLight}
+                  autoFocus
+                  returnKeyType="done"
+                  onSubmitEditing={handleAnswer}
+                  keyboardType={question?.input_type === 'number' ? 'number-pad' : 'default'}
+                />
+              </View>
+            )}
+
+            {/* Submit */}
+            <TouchableOpacity
+              style={[styles.submitBtn, (isManualMode ? !manualText.trim() || isCreating : !answer || isSubmitting) && { opacity: 0.45 }]}
+              onPress={isManualMode ? handleManualSubmit : handleAnswer}
+              disabled={isManualMode ? !manualText.trim() || isCreating : !answer || isSubmitting}
+              activeOpacity={0.85}
+            >
+              <LinearGradient colors={GRADIENTS.primary} style={StyleSheet.absoluteFill} />
+              <Text style={styles.submitText}>
+                {isManualMode ? (isCreating ? 'Обрабатываем...' : 'Далее →') : (isSubmitting ? 'Отправляем...' : 'Ответить')}
+              </Text>
+            </TouchableOpacity>
+
+            {!isManualMode && (
+              <TouchableOpacity onPress={handleSkip} disabled={isSubmitting} style={styles.skipBtn}>
+                <Text style={styles.skipText}>Пропустить</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        </KeyboardAvoidingView>
+      </SafeAreaView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: COLORS.bg },
-  container: { flex: 1, padding: 24, justifyContent: 'center' },
-  progressRow: { flexDirection: 'row', gap: 8, marginBottom: 40, justifyContent: 'center' },
-  dot: { width: 8, height: 8, borderRadius: 4, backgroundColor: COLORS.border },
-  dotActive: { backgroundColor: COLORS.primary, width: 24 },
-  title: { fontSize: 22, fontWeight: '700', color: COLORS.text, marginBottom: 8 },
-  subtitle: { fontSize: 15, color: COLORS.textMuted, marginBottom: 24 },
-  input: {
-    borderWidth: 1.5, borderColor: COLORS.border, borderRadius: 12,
-    padding: 16, fontSize: 16, color: COLORS.text, marginBottom: 16,
-    backgroundColor: COLORS.card,
-  },
-  textArea: { height: 120 },
-  optionsList: { marginBottom: 16 },
-  optionBtn: {
-    borderWidth: 1.5, borderColor: COLORS.border, borderRadius: 12,
-    padding: 14, marginBottom: 8, backgroundColor: COLORS.card,
-  },
-  optionBtnActive: { borderColor: COLORS.primary, backgroundColor: COLORS.primary + '10' },
-  optionText: { fontSize: 16, color: COLORS.text },
-  optionTextActive: { color: COLORS.primary, fontWeight: '600' },
-  btn: {
-    backgroundColor: COLORS.primary, borderRadius: 12,
-    padding: 16, alignItems: 'center',
-  },
-  btnDisabled: { opacity: 0.5 },
-  btnText: { color: '#fff', fontSize: 16, fontWeight: '700' },
-  skipBtn: { padding: 16, alignItems: 'center' },
+  root:       { flex: 1, backgroundColor: COLORS.bg },
+  safe:       { flex: 1 },
+  kav:        { flex: 1 },
+  glowCenter: { position: 'absolute', top: '30%', left: '10%', width: 300, height: 300, borderRadius: 150, backgroundColor: 'rgba(139,92,246,0.12)' },
+
+  topBar:   { paddingHorizontal: 20, paddingTop: 8 },
+  backBtn:  { width: 38, height: 38, borderRadius: 19, overflow: 'hidden', alignItems: 'center', justifyContent: 'center' },
+  backBtnBg:{ ...StyleSheet.absoluteFillObject, backgroundColor: COLORS.glass, borderRadius: 19, borderWidth: 1, borderColor: COLORS.glassBorder },
+  backIcon: { color: COLORS.text, fontSize: 18, position: 'relative' },
+
+  container:   { flex: 1, paddingHorizontal: 24, justifyContent: 'center' },
+  progressRow: { flexDirection: 'row', gap: 8, marginBottom: 32, justifyContent: 'center' },
+  dot:         { width: 8, height: 8, borderRadius: 4, backgroundColor: COLORS.glass },
+  dotActive:   { backgroundColor: COLORS.primary, width: 28, borderRadius: 4 },
+
+  title:    { fontSize: 24, fontWeight: '800', color: COLORS.text, marginBottom: 8 },
+  subtitle: { fontSize: 15, color: COLORS.textMuted, marginBottom: 28, lineHeight: 22 },
+
+  inputWrap:{ borderRadius: RADIUS.xl, overflow: 'hidden', marginBottom: 20 },
+  inputBg:  { ...StyleSheet.absoluteFillObject, backgroundColor: COLORS.glass, borderRadius: RADIUS.xl, borderWidth: 1, borderColor: COLORS.glassBorder },
+  input:    { padding: 18, fontSize: 16, color: COLORS.text, position: 'relative' },
+  textArea: { padding: 18, fontSize: 16, color: COLORS.text, height: 140, position: 'relative' },
+
+  optionsList: { marginBottom: 20, gap: 8 },
+  optionBtn:   { borderRadius: RADIUS.lg, overflow: 'hidden' },
+  optionBg:    { ...StyleSheet.absoluteFillObject, backgroundColor: COLORS.glass, borderRadius: RADIUS.lg, borderWidth: 1, borderColor: COLORS.glassBorder },
+  optionCheck: { position: 'absolute', right: 18, top: '50%', width: 8, height: 8, borderRadius: 4, backgroundColor: COLORS.primary },
+  optionText:  { fontSize: 16, color: COLORS.text, padding: 16, position: 'relative' },
+
+  submitBtn:  { borderRadius: RADIUS.xl, overflow: 'hidden', paddingVertical: 16, alignItems: 'center', marginBottom: 12 },
+  submitText: { fontSize: 16, fontWeight: '700', color: '#fff', position: 'relative' },
+
+  skipBtn:  { paddingVertical: 14, alignItems: 'center' },
   skipText: { color: COLORS.textMuted, fontSize: 15 },
 });
