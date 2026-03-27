@@ -20,78 +20,105 @@ interface FloatingTabBarProps extends BottomTabBarProps {
 }
 
 const SIDE_MARGIN = 20;
-const PILL_PADDING = 4;
-const BAR_HEIGHT = 62;
+const PILL_PAD   = 4;
+const BAR_HEIGHT = 64;
+const TOP_GAP    = 10; // gap between pill top and reserved space top
 
 export function FloatingTabBar({ state, navigation, tabs, accentColor }: FloatingTabBarProps) {
   const { COLORS, blurTint, isDark } = useAppTheme();
   const insets = useSafeAreaInsets();
   const { width: SCREEN_WIDTH } = useWindowDimensions();
 
-  const CONTAINER_WIDTH = SCREEN_WIDTH - SIDE_MARGIN * 2;
-  const TAB_WIDTH = CONTAINER_WIDTH / tabs.length;
-  const PILL_W = TAB_WIDTH - PILL_PADDING * 2;
-  const PILL_H = BAR_HEIGHT - PILL_PADDING * 2;
+  const CONTAINER_W = SCREEN_WIDTH - SIDE_MARGIN * 2;
+  const TAB_W       = CONTAINER_W / tabs.length;
+  const PILL_W      = TAB_W - PILL_PAD * 2;
+  const PILL_H      = BAR_HEIGHT - PILL_PAD * 2;
 
   const activeIndex = tabs.findIndex(t => t.name === state.routes[state.index]?.name);
-  const safeIndex = Math.max(0, activeIndex);
+  const safeIdx     = Math.max(0, activeIndex);
 
-  const slideAnim = useRef(new Animated.Value(safeIndex)).current;
+  const slideAnim = useRef(new Animated.Value(safeIdx)).current;
 
   useEffect(() => {
     Animated.spring(slideAnim, {
-      toValue: safeIndex,
+      toValue: safeIdx,
       useNativeDriver: true,
-      tension: 75,
-      friction: 11,
+      tension: 80,
+      friction: 12,
     }).start();
-  }, [safeIndex]);
+  }, [safeIdx]);
 
   const pillX = slideAnim.interpolate({
-    inputRange: tabs.map((_, i) => i),
-    outputRange: tabs.map((_, i) => PILL_PADDING + TAB_WIDTH * i),
+    inputRange:  tabs.map((_, i) => i),
+    outputRange: tabs.map((_, i) => PILL_PAD + TAB_W * i),
   });
 
+  // Dark: deep cosmos glass | Light: violet-tinted glass (contrast for white pill)
   const containerBg = isDark
-    ? 'rgba(13,11,30,0.72)'
-    : 'rgba(248,247,255,0.78)';
+    ? 'rgba(13,11,30,0.82)'
+    : 'rgba(124,58,237,0.13)';
 
+  // Active pill: slightly white glow in dark | solid white in light (pops on violet)
   const pillBg = isDark
-    ? 'rgba(255,255,255,0.12)'
-    : 'rgba(255,255,255,0.95)';
+    ? 'rgba(255,255,255,0.16)'
+    : 'rgba(255,255,255,0.94)';
 
-  const bottomOffset = insets.bottom > 0 ? insets.bottom + 8 : 16;
+  // Total height reserved at bottom: pill + gap above + safe area below
+  const totalHeight = BAR_HEIGHT + TOP_GAP + Math.max(insets.bottom, 8);
 
   return (
-    <View style={[styles.wrapper, { bottom: bottomOffset, width: CONTAINER_WIDTH }]}>
-      {/* Shadow ring */}
-      <View style={[styles.shadow, { shadowColor: accentColor }]} />
+    <View style={[styles.root, { height: totalHeight }]}>
+      {/* Shadow underneath the pill */}
+      <View
+        style={[
+          styles.pillShadow,
+          {
+            width: CONTAINER_W,
+            height: BAR_HEIGHT,
+            shadowColor: accentColor,
+          },
+        ]}
+      />
 
-      {/* Clipping container */}
-      <View style={[styles.clip, { height: BAR_HEIGHT }]}>
-        {/* Blur layer */}
+      {/* Pill shape with blur */}
+      <View
+        style={[
+          styles.pill,
+          {
+            width: CONTAINER_W,
+            height: BAR_HEIGHT,
+          },
+        ]}
+      >
+        {/* Blur — borderRadius needed on iOS */}
         <BlurView
-          intensity={50}
+          intensity={55}
           tint={blurTint}
-          style={StyleSheet.absoluteFill}
+          style={[StyleSheet.absoluteFill, { borderRadius: 999 }]}
         />
-        {/* Color overlay */}
+        {/* Color fill */}
         <View style={[StyleSheet.absoluteFill, { backgroundColor: containerBg }]} />
         {/* Border */}
-        <View style={[StyleSheet.absoluteFill, styles.border, { borderColor: COLORS.glassBorder }]} />
+        <View
+          style={[
+            StyleSheet.absoluteFill,
+            styles.border,
+            { borderColor: COLORS.glassBorder },
+          ]}
+        />
 
-        {/* Sliding pill */}
+        {/* Sliding active indicator */}
         <Animated.View
           style={[
-            styles.pill,
+            styles.indicator,
             {
               width: PILL_W,
               height: PILL_H,
               backgroundColor: pillBg,
               transform: [{ translateX: pillX }],
               shadowColor: accentColor,
-              shadowOpacity: isDark ? 0.45 : 0.20,
-              shadowRadius: 14,
+              shadowOpacity: isDark ? 0.5 : 0.22,
+              shadowRadius: 12,
               shadowOffset: { width: 0, height: 2 },
               elevation: 4,
             },
@@ -100,13 +127,13 @@ export function FloatingTabBar({ state, navigation, tabs, accentColor }: Floatin
 
         {/* Tab buttons */}
         {tabs.map((tab, index) => {
-          const focused = safeIndex === index;
-          const route = state.routes.find(r => r.name === tab.name);
+          const focused = safeIdx === index;
+          const route   = state.routes.find(r => r.name === tab.name);
 
           return (
             <TouchableOpacity
               key={tab.name}
-              style={[styles.tab, { width: TAB_WIDTH, height: BAR_HEIGHT }]}
+              style={[styles.tab, { width: TAB_W, height: BAR_HEIGHT }]}
               onPress={() => {
                 if (!focused && route) navigation.navigate(route.name);
               }}
@@ -136,40 +163,51 @@ export function FloatingTabBar({ state, navigation, tabs, accentColor }: Floatin
 }
 
 const styles = StyleSheet.create({
-  wrapper: {
+  // Root reserves space at bottom so content doesn't overlap
+  root: {
+    backgroundColor: 'transparent',
+    alignItems: 'center',
+    justifyContent: 'flex-start',
+    paddingTop: TOP_GAP,
+  },
+
+  // Shadow layer sits behind the pill
+  pillShadow: {
     position: 'absolute',
-    alignSelf: 'center',
-    left: SIDE_MARGIN,
-    zIndex: 999,
-  },
-  shadow: {
-    ...StyleSheet.absoluteFillObject,
+    top: TOP_GAP,
     borderRadius: 999,
-    shadowOpacity: 0.22,
-    shadowRadius: 20,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 12,
+    shadowOpacity: 0.28,
+    shadowRadius: 28,
+    shadowOffset: { width: 0, height: 8 },
+    elevation: 14,
   },
-  clip: {
+
+  // The visible pill container
+  pill: {
     borderRadius: 999,
     overflow: 'hidden',
     flexDirection: 'row',
     alignItems: 'center',
   },
+
   border: {
     borderRadius: 999,
     borderWidth: 1,
   },
-  pill: {
+
+  // Active sliding indicator behind text
+  indicator: {
     position: 'absolute',
-    top: PILL_PADDING,
+    top: PILL_PAD,
     borderRadius: 999,
   },
+
   tab: {
     alignItems: 'center',
     justifyContent: 'center',
     gap: 2,
   },
+
   icon:  { fontSize: 18 },
   label: { fontSize: 10, letterSpacing: 0.1 },
 });
