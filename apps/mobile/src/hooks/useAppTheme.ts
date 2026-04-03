@@ -28,11 +28,14 @@ export function useAppTheme(): AppTheme {
       ? systemScheme !== 'light'   // default dark when system unknown
       : preference === 'dark';
 
+  const colors = isDark ? DARK_COLORS : LIGHT_COLORS;
+  const gradients = isDark ? DARK_GRADIENTS : LIGHT_GRADIENTS;
+
   return {
     isDark,
     blurTint:     isDark ? 'dark' : 'light',
-    COLORS:       isDark ? DARK_COLORS   : LIGHT_COLORS,
-    GRADIENTS:    isDark ? DARK_GRADIENTS : LIGHT_GRADIENTS,
+    COLORS:       colors,
+    GRADIENTS:    gradients as AppGradients,
     RADIUS,
     SHADOW,
     FONT,
