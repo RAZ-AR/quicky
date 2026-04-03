@@ -1,44 +1,72 @@
-import { View, StyleSheet, ViewStyle } from 'react-native';
-import { BlurView } from 'expo-blur';
-import { COLORS, RADIUS } from '../constants/config';
+import { View, TouchableOpacity, StyleSheet, type ViewStyle } from 'react-native';
+import { useAppTheme } from '../hooks/useAppTheme';
+import { RADIUS } from '../constants/config';
 
 interface GlassCardProps {
   children: React.ReactNode;
   style?: ViewStyle;
-  intensity?: number;   // 0–100, сила blur
-  variant?: 'default' | 'violet' | 'cyan' | 'elevated';
+  intensity?: number;   // kept for API compatibility, unused
+  variant?: 'subtle' | 'default' | 'elevated' | 'accent';
   radius?: number;
+  accentColor?: string;
+  onPress?: () => void;
 }
 
 export function GlassCard({
   children,
   style,
-  intensity = 20,
   variant = 'default',
   radius = RADIUS.xl,
+  accentColor,
+  onPress,
 }: GlassCardProps) {
-  const overlayColor = {
+  const { COLORS, isDark } = useAppTheme();
+
+  const bgColor = {
+    subtle:   'transparent',
     default:  COLORS.glass,
-    violet:   COLORS.glassViolet,
-    cyan:     COLORS.glassCyan,
-    elevated: COLORS.glassLight,
+    elevated: COLORS.bgLayer,
+    accent:   COLORS.glassViolet,
   }[variant];
 
+  const borderColor = variant === 'accent'
+    ? (accentColor ?? COLORS.primary) + '30'
+    : COLORS.glassBorder;
+
+  const shadowStyle: ViewStyle = variant === 'elevated' ? {
+    shadowColor: isDark ? '#000' : '#1A1410',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: isDark ? 0.25 : 0.09,
+    shadowRadius: 8,
+    elevation: 3,
+  } : {};
+
+  const containerStyle: ViewStyle = {
+    borderRadius: radius,
+    backgroundColor: bgColor,
+    borderWidth: variant === 'subtle' ? 0 : 1,
+    borderColor,
+    ...shadowStyle,
+  };
+
+  const Wrapper = onPress ? TouchableOpacity : View;
+
   return (
-    <View style={[{ borderRadius: radius, overflow: 'hidden' }, style]}>
-      <BlurView intensity={intensity} tint="dark" style={StyleSheet.absoluteFill} />
-      <View
-        style={[
-          StyleSheet.absoluteFill,
-          {
-            backgroundColor: overlayColor,
-            borderRadius: radius,
-            borderWidth: 1,
-            borderColor: COLORS.glassBorder,
-          },
-        ]}
-      />
-      <View style={{ position: 'relative' }}>{children}</View>
-    </View>
+    <Wrapper
+      style={[containerStyle, style]}
+      {...(onPress ? { onPress, activeOpacity: 0.8 } : {})}
+    >
+      {variant === 'accent' && (
+        <View
+          style={{
+            position: 'absolute',
+            left: 0, top: 10, bottom: 10, width: 3,
+            backgroundColor: accentColor ?? COLORS.primary,
+            borderRadius: 2,
+          }}
+        />
+      )}
+      {children}
+    </Wrapper>
   );
 }

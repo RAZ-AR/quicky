@@ -2,8 +2,6 @@ import { useEffect, useMemo } from 'react';
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator, RefreshControl, StatusBar } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { LinearGradient } from 'expo-linear-gradient';
-import { BlurView } from 'expo-blur';
 import { useTaskStore } from '../../src/stores/taskStore';
 import { RADIUS, TASK_STATE_COLORS, TASK_STATE_LABELS, type AppColors } from '../../src/constants/config';
 import { useAppTheme } from '../../src/hooks/useAppTheme';
@@ -12,32 +10,42 @@ import type { Task } from '../../src/services/api';
 export default function ClientTasksTab() {
   const router = useRouter();
   const { myTasks, isLoading, loadMyTasks } = useTaskStore();
-  const { COLORS, GRADIENTS, isDark, blurTint } = useAppTheme();
-  const styles = useMemo(() => makeStyles(COLORS), [COLORS]);
+  const { COLORS, isDark } = useAppTheme();
+  const styles = useMemo(() => makeStyles(COLORS, isDark), [COLORS, isDark]);
 
   useEffect(() => { loadMyTasks(); }, []);
 
   const renderItem = ({ item }: { item: Task }) => {
-    const stateColor = TASK_STATE_COLORS[item.state] ?? COLORS.primary;
+    const stateColor = TASK_STATE_COLORS[item.state] ?? COLORS.textMuted;
     return (
       <TouchableOpacity
         style={styles.card}
         onPress={() => router.push({ pathname: '/(client)/tasks/[id]', params: { id: item.id } })}
-        activeOpacity={0.85}
+        activeOpacity={0.8}
       >
-        <BlurView intensity={18} tint={blurTint} style={StyleSheet.absoluteFill} />
-        <View style={styles.cardBg} />
-        <View style={[styles.cardAccent, { backgroundColor: stateColor }]} />
-        <View style={{ position: 'relative', padding: 16 }}>
-          <View style={styles.cardHeader}>
-            <Text style={styles.cardTitle} numberOfLines={2}>{item.item_description ?? 'Заказ'}</Text>
-            <View style={[styles.badge, { backgroundColor: stateColor + '20', borderColor: stateColor + '40' }]}>
-              <Text style={[styles.badgeText, { color: stateColor }]}>{TASK_STATE_LABELS[item.state] ?? item.state}</Text>
+        <View style={[styles.stateBar, { backgroundColor: stateColor }]} />
+        <View style={styles.cardContent}>
+          <View style={styles.cardTop}>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.cardTitle} numberOfLines={2}>{item.item_description ?? 'Заказ'}</Text>
+              <Text style={styles.cardAddr} numberOfLines={1}>
+                {item.to_location?.address ? `📍 ${item.to_location.address}` : '—'}
+              </Text>
+            </View>
+            <View style={[styles.badge, { backgroundColor: stateColor + '18' }]}>
+              <Text style={[styles.badgeText, { color: stateColor }]}>
+                {TASK_STATE_LABELS[item.state] ?? item.state}
+              </Text>
             </View>
           </View>
-          <Text style={styles.cardAddr} numberOfLines={1}>📍 {item.to_location?.address ?? '—'}</Text>
-          {item.price_final && <Text style={styles.cardPrice}>{item.price_final} ₽</Text>}
-          <Text style={styles.cardDate}>{new Date(item.created_at ?? '').toLocaleDateString('ru')}</Text>
+          <View style={styles.cardBottom}>
+            {item.price_final && (
+              <Text style={[styles.cardPrice, { color: stateColor }]}>{item.price_final} ₽</Text>
+            )}
+            <Text style={styles.cardDate}>
+              {new Date(item.created_at ?? '').toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' })}
+            </Text>
+          </View>
         </View>
       </TouchableOpacity>
     );
@@ -46,14 +54,15 @@ export default function ClientTasksTab() {
   return (
     <View style={styles.root}>
       <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
-      <LinearGradient colors={GRADIENTS.bg} style={StyleSheet.absoluteFill} />
-      <View style={styles.glowTop} />
 
       <SafeAreaView style={styles.safe} edges={['top']}>
         <View style={styles.header}>
           <Text style={styles.title}>Мои заказы</Text>
-          <TouchableOpacity style={styles.newBtn} onPress={() => router.push('/(client)/voice')} activeOpacity={0.85}>
-            <LinearGradient colors={GRADIENTS.primary} style={StyleSheet.absoluteFill} />
+          <TouchableOpacity
+            style={styles.newBtn}
+            onPress={() => router.push('/(client)/voice')}
+            activeOpacity={0.85}
+          >
             <Text style={styles.newBtnText}>+ Новый</Text>
           </TouchableOpacity>
         </View>
@@ -72,8 +81,11 @@ export default function ClientTasksTab() {
               <View style={styles.empty}>
                 <Text style={styles.emptyIcon}>📋</Text>
                 <Text style={styles.emptyText}>Заказов пока нет</Text>
-                <TouchableOpacity style={styles.emptyBtn} onPress={() => router.push('/(client)/voice')} activeOpacity={0.85}>
-                  <LinearGradient colors={GRADIENTS.primary} style={StyleSheet.absoluteFill} />
+                <TouchableOpacity
+                  style={styles.emptyBtn}
+                  onPress={() => router.push('/(client)/voice')}
+                  activeOpacity={0.85}
+                >
                   <Text style={styles.emptyBtnText}>Создать первый заказ</Text>
                 </TouchableOpacity>
               </View>
@@ -85,39 +97,52 @@ export default function ClientTasksTab() {
   );
 }
 
-function makeStyles(C: AppColors, C_RADIUS = RADIUS) {
+function makeStyles(C: AppColors, isDark: boolean, R = RADIUS) {
   return StyleSheet.create({
     root: { flex: 1, backgroundColor: C.bg },
     safe: { flex: 1 },
-    glowTop: {
-      position: 'absolute', top: -40, right: -40,
-      width: 180, height: 180, borderRadius: 90,
-      backgroundColor: 'rgba(139,92,246,0.12)',
-    },
 
-    header:   { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingTop: 8, paddingBottom: 12 },
-    title:    { flex: 1, fontSize: 24, fontWeight: '800', color: C.text },
-    newBtn:   { borderRadius: C_RADIUS.full, overflow: 'hidden', paddingHorizontal: 16, paddingVertical: 9 },
-    newBtnText:{ color: '#fff', fontWeight: '700', fontSize: 14, position: 'relative' },
+    header: {
+      flexDirection: 'row', alignItems: 'center',
+      paddingHorizontal: 20, paddingTop: 8, paddingBottom: 16,
+    },
+    title: { flex: 1, fontSize: 32, fontWeight: '800', color: C.text, letterSpacing: -0.8 },
+    newBtn: {
+      borderRadius: R.full,
+      backgroundColor: C.primary,
+      paddingHorizontal: 18, paddingVertical: 10,
+    },
+    newBtnText: { color: '#fff', fontWeight: '700', fontSize: 14 },
 
     list: { paddingHorizontal: 16, paddingBottom: 100 },
 
-    card:   { borderRadius: C_RADIUS.xl, overflow: 'hidden', marginBottom: 10 },
-    cardBg: { ...StyleSheet.absoluteFillObject, backgroundColor: C.glass, borderRadius: C_RADIUS.xl, borderWidth: 1, borderColor: C.glassBorder },
-    cardAccent: { position: 'absolute', left: 0, top: 16, bottom: 16, width: 3, borderRadius: 2 },
+    card: {
+      borderRadius: R.xl, marginBottom: 10,
+      backgroundColor: C.glass,
+      borderWidth: 1, borderColor: C.border,
+      flexDirection: 'row', overflow: 'hidden',
+    },
+    stateBar: { width: 4, borderTopLeftRadius: R.xl, borderBottomLeftRadius: R.xl },
+    cardContent: { flex: 1, padding: 16 },
 
-    cardHeader: { flexDirection: 'row', alignItems: 'flex-start', marginBottom: 8, gap: 8 },
-    cardTitle:  { flex: 1, fontSize: 15, fontWeight: '600', color: C.text },
-    badge:      { borderRadius: C_RADIUS.sm, paddingHorizontal: 10, paddingVertical: 4, borderWidth: 1 },
-    badgeText:  { fontSize: 12, fontWeight: '600' },
-    cardAddr:   { fontSize: 13, color: C.textMuted, marginBottom: 4 },
-    cardPrice:  { fontSize: 16, fontWeight: '800', color: C.primary, marginBottom: 4 },
-    cardDate:   { fontSize: 12, color: C.textLight },
+    cardTop: { flexDirection: 'row', alignItems: 'flex-start', marginBottom: 12, gap: 8 },
+    cardTitle: { flex: 1, fontSize: 15, fontWeight: '600', color: C.text },
+    badge: { borderRadius: R.sm, paddingHorizontal: 8, paddingVertical: 4 },
+    badgeText: { fontSize: 11, fontWeight: '600' },
+    cardAddr: { fontSize: 13, color: C.textMuted, marginTop: 2 },
 
-    empty:       { alignItems: 'center', paddingTop: 80 },
-    emptyIcon:   { fontSize: 48, marginBottom: 16 },
-    emptyText:   { fontSize: 16, fontWeight: '600', color: C.text, marginBottom: 20 },
-    emptyBtn:    { borderRadius: C_RADIUS.xl, overflow: 'hidden', paddingHorizontal: 24, paddingVertical: 14 },
-    emptyBtnText:{ color: '#fff', fontWeight: '700', fontSize: 15, position: 'relative' },
+    cardBottom: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+    cardPrice: { fontSize: 16, fontWeight: '800' },
+    cardDate: { fontSize: 12, color: C.textLight },
+
+    empty: { alignItems: 'center', paddingTop: 80 },
+    emptyIcon: { fontSize: 48, marginBottom: 16 },
+    emptyText: { fontSize: 16, fontWeight: '600', color: C.text, marginBottom: 20 },
+    emptyBtn: {
+      borderRadius: R.xl,
+      backgroundColor: C.primary,
+      paddingHorizontal: 24, paddingVertical: 14,
+    },
+    emptyBtnText: { color: '#fff', fontWeight: '700', fontSize: 15 },
   });
 }

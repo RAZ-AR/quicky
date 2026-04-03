@@ -4,137 +4,149 @@ const RENDER_URL = 'https://quicky-api.onrender.com';
 export const API_URL    = RENDER_URL;
 export const SOCKET_URL = API_URL;
 
-// ─── Aurora Glass – Dark Cosmos ───────────────────────────────────────────────
+// ─── Warm Editorial – Dark Charcoal ──────────────────────────────────────────
 export const DARK_COLORS = {
-  primary:        '#8B5CF6',
-  primaryLight:   '#A78BFA',
-  primaryDark:    '#7C3AED',
-  primaryGlow:    'rgba(139,92,246,0.35)',
+  primary:        '#D49060',
+  primaryLight:   '#E0AA80',
+  primaryDark:    '#B87040',
+  primaryGlow:    'rgba(212,144,96,0.22)',
 
-  executor:       '#06B6D4',
-  executorLight:  '#22D3EE',
-  executorGlow:   'rgba(6,182,212,0.35)',
+  executor:       '#68A882',
+  executorLight:  '#8EC4A0',
+  executorGlow:   'rgba(104,168,130,0.20)',
 
-  success:        '#10B981',
-  successLight:   '#34D399',
-  successGlow:    'rgba(16,185,129,0.30)',
+  success:        '#68A882',
+  successLight:   '#8EC4A0',
+  successGlow:    'rgba(104,168,130,0.18)',
 
-  danger:         '#F43F5E',
-  dangerLight:    '#FB7185',
-  dangerGlow:     'rgba(244,63,94,0.18)',
+  danger:         '#D97A7A',
+  dangerLight:    '#E89A9A',
+  dangerGlow:     'rgba(217,122,122,0.22)',
 
-  warning:        '#F59E0B',
-  warningLight:   '#FCD34D',
-  warningGlow:    'rgba(245,158,11,0.18)',
+  warning:        '#D4B060',
+  warningLight:   '#E0C880',
+  warningGlow:    'rgba(212,176,96,0.20)',
 
-  hot:            '#F43F5E',
-  hotGlow:        'rgba(244,63,94,0.40)',
+  hot:            '#D97A7A',
+  hotGlow:        'rgba(217,122,122,0.28)',
 
-  bg:             '#0D0B1E',
-  bgLayer:        '#13112A',
-  bgElevated:     '#1A1535',
+  bg:             '#1C1610',
+  bgLayer:        '#262018',
+  bgElevated:     '#302A22',
 
-  glass:          'rgba(255,255,255,0.07)',
-  glassLight:     'rgba(255,255,255,0.12)',
-  glassBorder:    'rgba(255,255,255,0.10)',
-  glassViolet:    'rgba(139,92,246,0.15)',
-  glassCyan:      'rgba(6,182,212,0.12)',
+  glass:          'rgba(255,253,246,0.07)',
+  glassLight:     'rgba(255,253,246,0.11)',
+  glassBorder:    'rgba(255,253,246,0.09)',
+  glassBorderSubtle: 'rgba(255,253,246,0.05)',
+  glassViolet:    'rgba(232,223,176,0.14)',
+  glassCyan:      'rgba(196,212,190,0.12)',
 
-  text:           '#F0EEFF',
-  textMuted:      'rgba(240,238,255,0.55)',
-  textLight:      'rgba(240,238,255,0.30)',
+  text:           '#F5EFE0',
+  textMuted:      'rgba(245,239,224,0.48)',
+  textLight:      'rgba(245,239,224,0.28)',
 
-  border:         'rgba(255,255,255,0.10)',
-  divider:        'rgba(255,255,255,0.06)',
-  card:           'rgba(255,255,255,0.07)',
-  tabBar:         'rgba(13,11,30,0.90)',
-  tabBarActive:   '#8B5CF6',
-  tabBarInactive: 'rgba(240,238,255,0.35)',
+  border:         'rgba(255,253,246,0.09)',
+  divider:        'rgba(255,253,246,0.05)',
+  card:           'rgba(255,253,246,0.07)',
+  tabBar:         '#1C1610',
+  tabBarActive:   '#D49060',
+  tabBarInactive: 'rgba(245,239,224,0.32)',
+
+  surface:        'rgba(48,42,34,0.90)',
+  overlay:        'rgba(0,0,0,0.45)',
 };
 
-// ─── Aurora Glass – Light Aura ────────────────────────────────────────────────
+// ─── Warm Editorial – Light Cream ────────────────────────────────────────────
 export const LIGHT_COLORS = {
-  primary:        '#7C3AED',
-  primaryLight:   '#8B5CF6',
-  primaryDark:    '#6D28D9',
-  primaryGlow:    'rgba(124,58,237,0.18)',
+  primary:        '#B87040',
+  primaryLight:   '#C88A60',
+  primaryDark:    '#A06030',
+  primaryGlow:    'rgba(184,112,64,0.15)',
 
-  executor:       '#0891B2',
-  executorLight:  '#06B6D4',
-  executorGlow:   'rgba(8,145,178,0.18)',
+  executor:       '#4E8B6E',
+  executorLight:  '#6DAA8A',
+  executorGlow:   'rgba(78,139,110,0.15)',
 
-  success:        '#059669',
-  successLight:   '#10B981',
-  successGlow:    'rgba(5,150,105,0.15)',
+  success:        '#4E8B6E',
+  successLight:   '#6DAA8A',
+  successGlow:    'rgba(78,139,110,0.12)',
 
-  danger:         '#E11D48',
-  dangerLight:    '#F43F5E',
-  dangerGlow:     'rgba(225,29,72,0.10)',
+  danger:         '#C85050',
+  dangerLight:    '#D97878',
+  dangerGlow:     'rgba(200,80,80,0.12)',
 
-  warning:        '#D97706',
-  warningLight:   '#F59E0B',
-  warningGlow:    'rgba(217,119,6,0.10)',
+  warning:        '#C89640',
+  warningLight:   '#D4B060',
+  warningGlow:    'rgba(200,150,64,0.12)',
 
-  hot:            '#E11D48',
-  hotGlow:        'rgba(225,29,72,0.20)',
+  hot:            '#C85050',
+  hotGlow:        'rgba(200,80,80,0.18)',
 
-  bg:             '#F8F7FF',
-  bgLayer:        '#FFFFFF',
-  bgElevated:     '#F0EDFB',
+  bg:             '#F5EFE0',
+  bgLayer:        '#FFFDF6',
+  bgElevated:     '#EDE6D4',
 
-  glass:          'rgba(255,255,255,0.75)',
-  glassLight:     'rgba(255,255,255,0.92)',
-  glassBorder:    'rgba(139,92,246,0.14)',
-  glassViolet:    'rgba(124,58,237,0.07)',
-  glassCyan:      'rgba(8,145,178,0.07)',
+  glass:          '#FFFDF6',
+  glassLight:     '#FFFFFF',
+  glassBorder:    'rgba(26,20,16,0.09)',
+  glassBorderSubtle: 'rgba(26,20,16,0.05)',
+  glassViolet:    '#E8DFB0',
+  glassCyan:      '#C4D4BE',
 
-  text:           '#1A1040',
-  textMuted:      'rgba(26,16,64,0.55)',
-  textLight:      'rgba(26,16,64,0.32)',
+  text:           '#1A1410',
+  textMuted:      'rgba(26,20,16,0.48)',
+  textLight:      'rgba(26,20,16,0.28)',
 
-  border:         'rgba(139,92,246,0.14)',
-  divider:        'rgba(139,92,246,0.08)',
-  card:           'rgba(255,255,255,0.75)',
-  tabBar:         'rgba(248,247,255,0.92)',
-  tabBarActive:   '#7C3AED',
-  tabBarInactive: 'rgba(26,16,64,0.35)',
+  border:         'rgba(26,20,16,0.09)',
+  divider:        'rgba(26,20,16,0.05)',
+  card:           '#FFFDF6',
+  tabBar:         '#F5EFE0',
+  tabBarActive:   '#1A1410',
+  tabBarInactive: 'rgba(26,20,16,0.30)',
+
+  surface:        '#EDE6D4',
+  overlay:        'rgba(26,20,16,0.25)',
 };
 
 // ─── Градиенты ────────────────────────────────────────────────────────────────
 export const DARK_GRADIENTS = {
-  bg:       ['#0D0B1E', '#13112A', '#0D0B1E'] as const,
-  hero:     ['rgba(139,92,246,0.40)', 'rgba(6,182,212,0.20)', 'transparent'] as const,
-  card:     ['rgba(255,255,255,0.10)', 'rgba(255,255,255,0.04)'] as const,
-  primary:  ['#8B5CF6', '#7C3AED'] as const,
-  executor: ['#06B6D4', '#0891B2'] as const,
-  success:  ['#10B981', '#059669'] as const,
-  danger:   ['#F43F5E', '#E11D48'] as const,
-  hot:      ['#F43F5E', '#F59E0B'] as const,
+  bg:       ['#1C1610', '#262018', '#1C1610'] as const,
+  hero:     ['rgba(212,144,96,0.20)', 'rgba(104,168,130,0.10)', 'transparent'] as const,
+  card:     ['rgba(255,253,246,0.09)', 'rgba(255,253,246,0.04)'] as const,
+  primary:  ['#D49060', '#B87040'] as const,
+  executor: ['#68A882', '#4E8B6E'] as const,
+  success:  ['#68A882', '#4E8B6E'] as const,
+  danger:   ['#D97A7A', '#C85050'] as const,
+  hot:      ['#D97A7A', '#D4B060'] as const,
 };
 
 export const LIGHT_GRADIENTS = {
-  bg:       ['#F8F7FF', '#EFF6FF', '#F8F7FF'] as const,
-  hero:     ['rgba(124,58,237,0.15)', 'rgba(8,145,178,0.08)', 'transparent'] as const,
-  card:     ['rgba(255,255,255,0.95)', 'rgba(255,255,255,0.75)'] as const,
-  primary:  ['#8B5CF6', '#7C3AED'] as const,
-  executor: ['#06B6D4', '#0891B2'] as const,
-  success:  ['#10B981', '#059669'] as const,
-  danger:   ['#F43F5E', '#E11D48'] as const,
-  hot:      ['#F43F5E', '#F59E0B'] as const,
+  bg:       ['#F5EFE0', '#F5EFE0', '#F5EFE0'] as const,
+  hero:     ['rgba(184,112,64,0.12)', 'rgba(78,139,110,0.08)', 'transparent'] as const,
+  card:     ['#FFFDF6', '#EDE6D4'] as const,
+  primary:  ['#C88A60', '#B87040'] as const,
+  executor: ['#6DAA8A', '#4E8B6E'] as const,
+  success:  ['#6DAA8A', '#4E8B6E'] as const,
+  danger:   ['#D97878', '#C85050'] as const,
+  hot:      ['#D97878', '#C89640'] as const,
 };
 
 // ─── Типы ─────────────────────────────────────────────────────────────────────
 export type AppColors    = typeof DARK_COLORS;
-export type AppGradients = typeof DARK_GRADIENTS;
+export type AppGradients = typeof DARK_GRADIENTS | typeof LIGHT_GRADIENTS;
 
 // ─── Статические константы (не зависят от темы) ───────────────────────────────
-export const RADIUS = { sm: 10, md: 16, lg: 20, xl: 28, xxl: 36, full: 999 };
+export const RADIUS = { sm: 8, md: 12, lg: 16, xl: 22, xxl: 30, full: 999 };
 
 export const SHADOW = {
-  sm:   { shadowColor: '#8B5CF6', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.20, shadowRadius: 12, elevation: 3 },
-  md:   { shadowColor: '#8B5CF6', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.30, shadowRadius: 24, elevation: 6 },
-  glow: { shadowColor: '#8B5CF6', shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.60, shadowRadius: 20, elevation: 8 },
-  cyan: { shadowColor: '#06B6D4', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.35, shadowRadius: 20, elevation: 6 },
+  sm:   { shadowColor: '#1A1410', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.08, shadowRadius: 8,  elevation: 2 },
+  md:   { shadowColor: '#1A1410', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.12, shadowRadius: 16, elevation: 4 },
+  glow: { shadowColor: '#B87040', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.22, shadowRadius: 16, elevation: 6 },
+  cyan: { shadowColor: '#4E8B6E', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.18, shadowRadius: 16, elevation: 4 },
+};
+
+export const SPACING = {
+  xs: 4, sm: 8, md: 12, lg: 16, xl: 20, xxl: 24, xxxl: 32, xxxxll: 48
 };
 
 export const FONT = {
@@ -143,8 +155,8 @@ export const FONT = {
   md:   { fontSize: 15, lineHeight: 22 },
   lg:   { fontSize: 17, lineHeight: 24 },
   xl:   { fontSize: 20, lineHeight: 28 },
-  xxl:  { fontSize: 26, lineHeight: 34 },
-  hero: { fontSize: 32, lineHeight: 40 },
+  xxl:  { fontSize: 24, lineHeight: 32 },
+  hero: { fontSize: 28, lineHeight: 36 },
 };
 
 export const TASK_STATE_LABELS: Record<string, string> = {
@@ -161,16 +173,16 @@ export const TASK_STATE_LABELS: Record<string, string> = {
 };
 
 export const TASK_STATE_COLORS: Record<string, string> = {
-  draft:           '#9CA3AF',
-  pending_confirm: '#F59E0B',
-  published:       '#06B6D4',
-  accepted:        '#8B5CF6',
-  in_progress:     '#8B5CF6',
-  pending_client:  '#F43F5E',
-  completed:       '#10B981',
-  rated:           '#10B981',
-  cancelled:       '#9CA3AF',
-  disputed:        '#F43F5E',
+  draft:           '#9B8E7A',
+  pending_confirm: '#C89640',
+  published:       '#4E8B6E',
+  accepted:        '#B87040',
+  in_progress:     '#B87040',
+  pending_client:  '#C85050',
+  completed:       '#4E8B6E',
+  rated:           '#4E8B6E',
+  cancelled:       '#9B8E7A',
+  disputed:        '#C85050',
 };
 
 // ─── Обратная совместимость (для компонентов не обновлённых на хук) ────────────

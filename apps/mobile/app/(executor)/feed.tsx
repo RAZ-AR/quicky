@@ -3,8 +3,6 @@ import { View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator, 
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import * as Location from 'expo-location';
-import { LinearGradient } from 'expo-linear-gradient';
-import { BlurView } from 'expo-blur';
 import { useTaskStore } from '../../src/stores/taskStore';
 import { getSocket } from '../../src/services/socket';
 import { useAuthStore } from '../../src/stores/authStore';
@@ -23,8 +21,8 @@ export default function ExecutorFeedScreen() {
   const { feed, isFeedLoading, loadFeed } = useTaskStore();
   const { user, token } = useAuthStore();
   const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null);
-  const { COLORS, GRADIENTS, isDark, blurTint } = useAppTheme();
-  const styles = useMemo(() => makeStyles(COLORS), [COLORS]);
+  const { COLORS, isDark } = useAppTheme();
+  const styles = useMemo(() => makeStyles(COLORS, isDark), [COLORS, isDark]);
 
   const fetchFeed = async () => {
     let lat = coords?.lat ?? 44.8176;
@@ -54,20 +52,27 @@ export default function ExecutorFeedScreen() {
     <TouchableOpacity
       style={styles.card}
       onPress={() => router.push({ pathname: '/(executor)/task/[id]', params: { id: item.id } })}
-      activeOpacity={0.85}
+      activeOpacity={0.8}
     >
-      <BlurView intensity={18} tint={blurTint} style={StyleSheet.absoluteFill} />
-      <View style={styles.cardBg} />
-      <View style={styles.cardAccent} />
-      <View style={{ position: 'relative', padding: 16 }}>
+      <View style={[styles.cardAccent, { backgroundColor: COLORS.executor }]} />
+      <View style={styles.cardContent}>
         <View style={styles.cardTop}>
-          <Text style={styles.cardTitle} numberOfLines={2}>{item.item_description ?? 'Задание'}</Text>
+          <View style={{ flex: 1, marginRight: 12 }}>
+            <Text style={styles.cardTitle} numberOfLines={2}>{item.item_description ?? 'Задание'}</Text>
+            <Text style={styles.cardAddr} numberOfLines={1}>
+              {item.to_location?.address ? `📍 ${item.to_location.address}` : '—'}
+            </Text>
+            {item.from_location && (
+              <Text style={styles.cardFrom} numberOfLines={1}>🏪 {item.from_location.address}</Text>
+            )}
+          </View>
           <Text style={styles.cardPrice}>{item.price_final} ₽</Text>
         </View>
-        <Text style={styles.cardAddr} numberOfLines={1}>📍 {item.to_location?.address ?? '—'}</Text>
-        {item.from_location && <Text style={styles.cardFrom} numberOfLines={1}>🏪 {item.from_location.address}</Text>}
-        <View style={styles.categoryPill}>
-          <Text style={styles.categoryText}>{CATEGORIES[item.category ?? ''] ?? item.category ?? '—'}</Text>
+        <View style={styles.cardBottom}>
+          <View style={styles.categoryPill}>
+            <Text style={styles.categoryText}>{CATEGORIES[item.category ?? ''] ?? item.category ?? '—'}</Text>
+          </View>
+          <Text style={styles.ctaText}>Взять →</Text>
         </View>
       </View>
     </TouchableOpacity>
@@ -76,8 +81,6 @@ export default function ExecutorFeedScreen() {
   return (
     <View style={styles.root}>
       <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
-      <LinearGradient colors={GRADIENTS.bg} style={StyleSheet.absoluteFill} />
-      <View style={styles.glowTop} />
 
       <SafeAreaView style={styles.safe} edges={['top']}>
         {/* Header */}
@@ -87,7 +90,6 @@ export default function ExecutorFeedScreen() {
             <Text style={styles.title}>Задания рядом</Text>
           </View>
           <View style={styles.countBadge}>
-            <LinearGradient colors={GRADIENTS.executor} style={StyleSheet.absoluteFill} />
             <Text style={styles.countText}>{feed.length}</Text>
           </View>
         </View>
@@ -116,38 +118,51 @@ export default function ExecutorFeedScreen() {
   );
 }
 
-function makeStyles(C: AppColors, C_RADIUS = RADIUS) {
+function makeStyles(C: AppColors, isDark: boolean, R = RADIUS) {
   return StyleSheet.create({
     root: { flex: 1, backgroundColor: C.bg },
     safe: { flex: 1 },
-    glowTop: {
-      position: 'absolute', top: -60, right: -30,
-      width: 220, height: 220, borderRadius: 110,
-      backgroundColor: 'rgba(6,182,212,0.15)',
-    },
 
-    header:     { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', paddingHorizontal: 20, paddingTop: 8, paddingBottom: 12 },
-    greeting:   { fontSize: 13, color: C.textMuted, marginBottom: 2 },
-    title:      { fontSize: 24, fontWeight: '800', color: C.text },
-    countBadge: { borderRadius: C_RADIUS.full, overflow: 'hidden', paddingHorizontal: 14, paddingVertical: 6, minWidth: 38, alignItems: 'center' },
-    countText:  { color: '#fff', fontSize: 15, fontWeight: '800', position: 'relative' },
+    header: {
+      flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between',
+      paddingHorizontal: 20, paddingTop: 8, paddingBottom: 16,
+    },
+    greeting: { fontSize: 13, color: C.textMuted, marginBottom: 2, fontWeight: '500' },
+    title: { fontSize: 32, fontWeight: '800', color: C.text, letterSpacing: -0.8 },
+    countBadge: {
+      borderRadius: R.full,
+      backgroundColor: C.executor,
+      paddingHorizontal: 14, paddingVertical: 7, minWidth: 38, alignItems: 'center',
+    },
+    countText: { color: '#fff', fontSize: 15, fontWeight: '800' },
 
     list: { paddingHorizontal: 16, paddingBottom: 100 },
 
-    card:      { borderRadius: C_RADIUS.xl, overflow: 'hidden', marginBottom: 10 },
-    cardBg:    { ...StyleSheet.absoluteFillObject, backgroundColor: C.glass, borderRadius: C_RADIUS.xl, borderWidth: 1, borderColor: C.glassBorder },
-    cardAccent:{ position: 'absolute', left: 0, top: 16, bottom: 16, width: 3, borderRadius: 2, backgroundColor: C.executor },
+    card: {
+      borderRadius: R.xl, marginBottom: 10,
+      backgroundColor: C.glass,
+      borderWidth: 1, borderColor: C.border,
+      flexDirection: 'row', overflow: 'hidden',
+    },
+    cardAccent: { width: 4, borderTopLeftRadius: R.xl, borderBottomLeftRadius: R.xl },
+    cardContent: { flex: 1, padding: 16 },
 
-    cardTop:   { flexDirection: 'row', alignItems: 'flex-start', marginBottom: 8 },
-    cardTitle: { flex: 1, fontSize: 16, fontWeight: '600', color: C.text, marginRight: 8 },
+    cardTop: { flexDirection: 'row', alignItems: 'flex-start', marginBottom: 12 },
+    cardTitle: { fontSize: 15, fontWeight: '600', color: C.text, marginBottom: 4 },
+    cardAddr: { fontSize: 13, color: C.textMuted, marginBottom: 2 },
+    cardFrom: { fontSize: 13, color: C.textMuted, marginBottom: 2 },
     cardPrice: { fontSize: 20, fontWeight: '800', color: C.executor },
-    cardAddr:  { fontSize: 13, color: C.textMuted, marginBottom: 2 },
-    cardFrom:  { fontSize: 13, color: C.textMuted, marginBottom: 8 },
 
-    categoryPill: { alignSelf: 'flex-start', backgroundColor: 'rgba(6,182,212,0.10)', borderRadius: C_RADIUS.sm, paddingHorizontal: 8, paddingVertical: 3, borderWidth: 1, borderColor: C.executor + '30' },
-    categoryText: { fontSize: 12, color: C.executorLight, fontWeight: '600' },
+    cardBottom: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+    categoryPill: {
+      backgroundColor: C.glassCyan,
+      borderRadius: R.sm,
+      paddingHorizontal: 8, paddingVertical: 3,
+    },
+    categoryText: { fontSize: 12, color: C.executor, fontWeight: '600' },
+    ctaText: { fontSize: 13, color: C.executor, fontWeight: '600' },
 
-    empty:     { alignItems: 'center', paddingTop: 80 },
+    empty: { alignItems: 'center', paddingTop: 80 },
     emptyIcon: { fontSize: 48, marginBottom: 16 },
     emptyText: { fontSize: 16, fontWeight: '700', color: C.text, marginBottom: 8 },
     emptyHint: { fontSize: 14, color: C.textMuted },

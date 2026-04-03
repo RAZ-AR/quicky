@@ -1,7 +1,5 @@
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, StatusBar, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { LinearGradient } from 'expo-linear-gradient';
-import { BlurView } from 'expo-blur';
 import { useAuthStore } from '../../src/stores/authStore';
 import { useTaskStore } from '../../src/stores/taskStore';
 import { RADIUS, type AppColors } from '../../src/constants/config';
@@ -11,22 +9,13 @@ import { useAppTheme } from '../../src/hooks/useAppTheme';
 export default function ClientProfileScreen() {
   const { user, logout } = useAuthStore();
   const { myTasks, loadMyTasks } = useTaskStore();
-  const { COLORS, GRADIENTS, isDark, blurTint, preference, setPreference } = useAppTheme();
-  const styles = useMemo(() => makeStyles(COLORS), [COLORS]);
+  const { COLORS, isDark, preference, setPreference } = useAppTheme();
+  const styles = useMemo(() => makeStyles(COLORS, isDark), [COLORS, isDark]);
 
   useEffect(() => { loadMyTasks(); }, []);
 
   const completed = myTasks.filter(t => t.state === 'completed' || t.state === 'rated').length;
   const active    = myTasks.filter(t => ['published', 'accepted', 'in_progress'].includes(t.state)).length;
-
-  const menuItems = [
-    { icon: '📝', label: 'Редактировать профиль' },
-    { icon: '🔔', label: 'Уведомления' },
-    { icon: '📍', label: 'Мои адреса' },
-    { icon: '💬', label: 'Поддержка' },
-    { icon: '📜', label: 'История заказов' },
-    { icon: '❓', label: 'Помощь' },
-  ];
 
   const handleLogout = () => {
     Alert.alert('Выход', 'Вы уверены?', [
@@ -38,19 +27,14 @@ export default function ClientProfileScreen() {
   return (
     <View style={styles.root}>
       <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
-      <LinearGradient colors={GRADIENTS.bg} style={StyleSheet.absoluteFill} />
-      <View style={styles.glowTop} />
 
       <SafeAreaView style={styles.safe} edges={['top']}>
         <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
 
-          {/* ── Avatar hero ────────────────────── */}
-          <View style={styles.heroSection}>
+          {/* ── Profile header ────────────────────── */}
+          <View style={styles.profileHeader}>
             <View style={styles.avatarRing}>
-              <LinearGradient colors={GRADIENTS.primary} style={StyleSheet.absoluteFill} />
-              <View style={styles.avatarInner}>
-                <Text style={styles.avatarText}>{user?.name?.[0]?.toUpperCase() ?? '?'}</Text>
-              </View>
+              <Text style={styles.avatarText}>{user?.name?.[0]?.toUpperCase() ?? '?'}</Text>
             </View>
             <Text style={styles.profileName}>{user?.name ?? '—'}</Text>
             <View style={styles.roleBadge}>
@@ -59,7 +43,7 @@ export default function ClientProfileScreen() {
             <Text style={styles.profilePhone}>{user?.phone ?? '—'}</Text>
           </View>
 
-          {/* ── Stats bento ────────────────────── */}
+          {/* ── Stats row ─────────────────────────── */}
           <View style={styles.statsRow}>
             {[
               { value: myTasks.length, label: 'Всего',     color: COLORS.text },
@@ -67,71 +51,69 @@ export default function ClientProfileScreen() {
               { value: active,         label: 'Активных',  color: COLORS.primary },
             ].map(({ value, label, color }) => (
               <View key={label} style={styles.statCard}>
-                <BlurView intensity={20} tint={blurTint} style={StyleSheet.absoluteFill} />
-                <View style={styles.statBg} />
-                <View style={{ position: 'relative', alignItems: 'center' }}>
-                  <Text style={[styles.statValue, { color }]}>{value}</Text>
-                  <Text style={styles.statLabel}>{label}</Text>
-                </View>
+                <Text style={[styles.statValue, { color }]}>{value}</Text>
+                <Text style={styles.statLabel}>{label}</Text>
               </View>
             ))}
           </View>
 
-          {/* ── Menu ───────────────────────────── */}
-          <View style={styles.menuCard}>
-            <BlurView intensity={20} tint={blurTint} style={StyleSheet.absoluteFill} />
-            <View style={styles.menuBg} />
-            <View style={{ position: 'relative' }}>
-              {menuItems.map((item, i) => (
-                <TouchableOpacity
-                  key={item.label}
-                  style={[styles.menuItem, i < menuItems.length - 1 && styles.menuDivider]}
-                  activeOpacity={0.7}
-                >
+          {/* ── Settings group ────────────────────── */}
+          <Text style={styles.groupLabel}>Настройки</Text>
+          <View style={styles.settingsCard}>
+            {[
+              { icon: '📝', label: 'Редактировать профиль' },
+              { icon: '🔔', label: 'Уведомления' },
+              { icon: '📍', label: 'Мои адреса' },
+              { icon: '💬', label: 'Поддержка' },
+              { icon: '📜', label: 'История заказов' },
+            ].map((item, i) => (
+              <TouchableOpacity
+                key={item.label}
+                style={[styles.menuItem, i > 0 && styles.menuDivider]}
+                activeOpacity={0.7}
+              >
+                <View style={styles.menuIconWrap}>
                   <Text style={styles.menuIcon}>{item.icon}</Text>
-                  <Text style={styles.menuLabel}>{item.label}</Text>
-                  <Text style={styles.menuChevron}>›</Text>
+                </View>
+                <Text style={styles.menuLabel}>{item.label}</Text>
+                <Text style={styles.menuChevron}>›</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+
+          {/* ── Theme selector ────────────────────── */}
+          <View style={styles.themeCard}>
+            <Text style={styles.themeTitle}>Тема оформления</Text>
+            <View style={styles.themeRow}>
+              {([
+                { key: 'light',  label: 'Светлая', icon: '☀️' },
+                { key: 'dark',   label: 'Тёмная',  icon: '🌙' },
+                { key: 'system', label: 'Система', icon: '⚙️' },
+              ] as const).map((t) => (
+                <TouchableOpacity
+                  key={t.key}
+                  style={[styles.themeBtn, preference === t.key && styles.themeBtnActive]}
+                  onPress={() => setPreference(t.key)}
+                  activeOpacity={0.8}
+                >
+                  <Text style={styles.themeBtnIcon}>{t.icon}</Text>
+                  <Text style={[styles.themeBtnLabel, preference === t.key && styles.themeBtnLabelActive]}>
+                    {t.label}
+                  </Text>
                 </TouchableOpacity>
               ))}
             </View>
           </View>
 
-          {/* ── Theme ──────────────────────────────────────────────────────── */}
-          <View style={styles.themeCard}>
-            <BlurView intensity={20} tint={blurTint} style={StyleSheet.absoluteFill} />
-            <View style={styles.themeCardBg} />
-            <View style={{ position: 'relative', padding: 16 }}>
-              <Text style={styles.themeTitle}>Тема оформления</Text>
-              <View style={styles.themeRow}>
-                {([
-                  { key: 'light',  label: 'Светлая', icon: '☀️' },
-                  { key: 'dark',   label: 'Тёмная',  icon: '🌙' },
-                  { key: 'system', label: 'Система', icon: '⚙️' },
-                ] as const).map((t) => (
-                  <TouchableOpacity
-                    key={t.key}
-                    style={styles.themeBtn}
-                    onPress={() => setPreference(t.key)}
-                    activeOpacity={0.8}
-                  >
-                    {preference === t.key && (
-                      <LinearGradient colors={GRADIENTS.primary} style={StyleSheet.absoluteFill} />
-                    )}
-                    <View style={[styles.themeBtnBg, preference === t.key && { opacity: 0 }]} />
-                    <Text style={styles.themeBtnIcon}>{t.icon}</Text>
-                    <Text style={[styles.themeBtnLabel, preference === t.key && { color: '#fff', fontWeight: '700' }]}>
-                      {t.label}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-            </View>
-          </View>
+          {/* ── Help ──────────────────────────────── */}
+          <TouchableOpacity style={styles.helpCard} activeOpacity={0.7}>
+            <Text style={styles.helpIcon}>❓</Text>
+            <Text style={styles.helpLabel}>Помощь и FAQ</Text>
+            <Text style={styles.helpChevron}>›</Text>
+          </TouchableOpacity>
 
-          {/* ── Logout ─────────────────────────── */}
+          {/* ── Logout ────────────────────────────── */}
           <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout} activeOpacity={0.8}>
-            <BlurView intensity={20} tint={blurTint} style={StyleSheet.absoluteFill} />
-            <View style={styles.logoutBg} />
             <Text style={styles.logoutText}>Выйти из аккаунта</Text>
           </TouchableOpacity>
 
@@ -142,65 +124,116 @@ export default function ClientProfileScreen() {
   );
 }
 
-function makeStyles(C: AppColors, C_RADIUS = RADIUS) {
+function makeStyles(C: AppColors, isDark: boolean, R = RADIUS) {
   return StyleSheet.create({
-    root:  { flex: 1, backgroundColor: C.bg },
-    safe:  { flex: 1 },
-    scroll:{ paddingHorizontal: 20 },
+    root:   { flex: 1, backgroundColor: C.bg },
+    safe:   { flex: 1 },
+    scroll: { paddingHorizontal: 20, paddingTop: 8 },
 
-    glowTop: {
-      position: 'absolute', top: -80, left: '30%',
-      width: 200, height: 200, borderRadius: 100,
-      backgroundColor: 'rgba(139,92,246,0.20)',
-    },
-
-    heroSection: { alignItems: 'center', paddingTop: 16, paddingBottom: 28 },
-    avatarRing:  {
-      width: 92, height: 92, borderRadius: 46,
+    // Profile header
+    profileHeader: { alignItems: 'center', paddingTop: 16, paddingBottom: 28 },
+    avatarRing: {
+      width: 88, height: 88, borderRadius: 44,
+      backgroundColor: C.glassViolet,
       alignItems: 'center', justifyContent: 'center',
-      marginBottom: 14, padding: 2,
+      marginBottom: 14,
+      borderWidth: 2, borderColor: C.border,
     },
-    avatarInner: {
-      width: 86, height: 86, borderRadius: 43,
+    avatarText:   { fontSize: 32, fontWeight: '800', color: C.text },
+    profileName:  { fontSize: 24, fontWeight: '800', color: C.text, marginBottom: 8, letterSpacing: -0.3 },
+    roleBadge: {
       backgroundColor: C.bgLayer,
-      alignItems: 'center', justifyContent: 'center',
-      borderWidth: 1, borderColor: C.glassBorder,
-    },
-    avatarText:   { fontSize: 34, fontWeight: '800', color: C.text },
-    profileName:  { fontSize: 22, fontWeight: '800', color: C.text, marginBottom: 8 },
-    roleBadge:    {
-      backgroundColor: C.glassViolet, borderRadius: C_RADIUS.full,
+      borderRadius: R.full,
       paddingHorizontal: 14, paddingVertical: 5, marginBottom: 8,
-      borderWidth: 1, borderColor: C.primary + '40',
+      borderWidth: 1, borderColor: C.border,
     },
     roleText:     { color: C.primary, fontWeight: '700', fontSize: 13 },
     profilePhone: { fontSize: 14, color: C.textMuted },
 
-    statsRow: { flexDirection: 'row', gap: 10, marginBottom: 16 },
-    statCard: { flex: 1, borderRadius: C_RADIUS.lg, overflow: 'hidden', paddingVertical: 16, alignItems: 'center' },
-    statBg:   { ...StyleSheet.absoluteFillObject, backgroundColor: C.glass, borderRadius: C_RADIUS.lg, borderWidth: 1, borderColor: C.glassBorder },
-    statValue:{ fontSize: 22, fontWeight: '800', marginBottom: 2 },
-    statLabel:{ fontSize: 10, color: C.textMuted, fontWeight: '600', textTransform: 'uppercase' },
+    // Stats
+    statsRow: { flexDirection: 'row', gap: 8, marginBottom: 28 },
+    statCard: {
+      flex: 1, borderRadius: R.lg,
+      backgroundColor: C.glass,
+      borderWidth: 1, borderColor: C.border,
+      paddingVertical: 16, alignItems: 'center',
+    },
+    statValue: { fontSize: 22, fontWeight: '800', marginBottom: 2 },
+    statLabel: { fontSize: 10, color: C.textMuted, fontWeight: '600', textTransform: 'uppercase' },
 
-    menuCard:   { borderRadius: C_RADIUS.xl, overflow: 'hidden', marginBottom: 12 },
-    menuBg:     { ...StyleSheet.absoluteFillObject, backgroundColor: C.glass, borderRadius: C_RADIUS.xl, borderWidth: 1, borderColor: C.glassBorder },
-    menuItem:   { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 16 },
-    menuDivider:{ borderBottomWidth: 1, borderBottomColor: C.divider },
-    menuIcon:   { fontSize: 20, marginRight: 14 },
-    menuLabel:  { flex: 1, fontSize: 15, color: C.text, fontWeight: '500' },
-    menuChevron:{ fontSize: 22, color: C.textMuted },
+    // Settings card
+    groupLabel: {
+      fontSize: 12, fontWeight: '700', color: C.textMuted,
+      textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 12,
+    },
+    settingsCard: {
+      borderRadius: R.xl, marginBottom: 12,
+      backgroundColor: C.glass,
+      borderWidth: 1, borderColor: C.border,
+      overflow: 'hidden',
+    },
+    menuItem: {
+      flexDirection: 'row', alignItems: 'center',
+      paddingHorizontal: 16, paddingVertical: 14,
+    },
+    menuDivider: {
+      borderTopWidth: 1, borderTopColor: C.divider,
+    },
+    menuIconWrap: {
+      width: 36, height: 36, borderRadius: R.md,
+      backgroundColor: C.bgElevated,
+      alignItems: 'center', justifyContent: 'center',
+      marginRight: 12,
+    },
+    menuIcon:    { fontSize: 17 },
+    menuLabel:   { flex: 1, fontSize: 15, color: C.text, fontWeight: '500' },
+    menuChevron: { fontSize: 20, color: C.textMuted },
 
-    themeCard:      { borderRadius: C_RADIUS.xl, overflow: 'hidden', marginBottom: 12 },
-    themeCardBg:    { ...StyleSheet.absoluteFillObject, backgroundColor: C.glass, borderRadius: C_RADIUS.xl, borderWidth: 1, borderColor: C.glassBorder },
-    themeTitle:     { fontSize: 13, color: C.textMuted, fontWeight: '700', textTransform: 'uppercase' as const, letterSpacing: 0.5, marginBottom: 12 },
-    themeRow:       { flexDirection: 'row', gap: 8 },
-    themeBtn:       { flex: 1, borderRadius: C_RADIUS.lg, overflow: 'hidden', paddingVertical: 10, alignItems: 'center' },
-    themeBtnBg:     { ...StyleSheet.absoluteFillObject, backgroundColor: C.glass, borderRadius: C_RADIUS.lg, borderWidth: 1, borderColor: C.glassBorder },
-    themeBtnIcon:   { fontSize: 18, marginBottom: 2, position: 'relative' as const },
-    themeBtnLabel:  { fontSize: 11, color: C.textMuted, position: 'relative' as const },
+    // Theme card
+    themeCard: {
+      borderRadius: R.xl, marginBottom: 12,
+      backgroundColor: C.glass,
+      borderWidth: 1, borderColor: C.border,
+      padding: 16,
+    },
+    themeTitle: {
+      fontSize: 12, color: C.textMuted, fontWeight: '700',
+      textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 12,
+    },
+    themeRow: { flexDirection: 'row', gap: 8 },
+    themeBtn: {
+      flex: 1, borderRadius: R.lg,
+      backgroundColor: C.bgElevated,
+      borderWidth: 1, borderColor: C.border,
+      paddingVertical: 12, alignItems: 'center',
+    },
+    themeBtnActive: {
+      backgroundColor: C.primary,
+      borderColor: C.primary,
+    },
+    themeBtnIcon:  { fontSize: 18, marginBottom: 2 },
+    themeBtnLabel: { fontSize: 11, color: C.textMuted },
+    themeBtnLabelActive: { color: '#fff', fontWeight: '700' },
 
-    logoutBtn:  { borderRadius: C_RADIUS.xl, overflow: 'hidden', alignItems: 'center', paddingVertical: 16 },
-    logoutBg:   { ...StyleSheet.absoluteFillObject, backgroundColor: C.dangerGlow, borderRadius: C_RADIUS.xl, borderWidth: 1, borderColor: C.danger + '40' },
-    logoutText: { color: C.danger, fontWeight: '700', fontSize: 16, position: 'relative' },
+    // Help card
+    helpCard: {
+      borderRadius: R.xl, marginBottom: 12,
+      backgroundColor: C.glass,
+      borderWidth: 1, borderColor: C.border,
+      flexDirection: 'row', alignItems: 'center',
+      paddingHorizontal: 16, paddingVertical: 16, gap: 12,
+    },
+    helpIcon:    { fontSize: 20 },
+    helpLabel:   { flex: 1, fontSize: 15, color: C.text, fontWeight: '500' },
+    helpChevron: { fontSize: 20, color: C.textMuted },
+
+    // Logout
+    logoutBtn: {
+      borderRadius: R.xl,
+      backgroundColor: C.dangerGlow,
+      borderWidth: 1, borderColor: C.danger + '25',
+      alignItems: 'center', paddingVertical: 16,
+    },
+    logoutText: { color: C.danger, fontWeight: '700', fontSize: 15 },
   });
 }
