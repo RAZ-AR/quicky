@@ -5,6 +5,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 import { useTaskStore } from '../../../src/stores/taskStore';
 import { getSocket, joinTaskRoom, leaveTaskRoom } from '../../../src/services/socket';
 import { useAuthStore } from '../../../src/stores/authStore';
@@ -24,40 +25,75 @@ function getStepIndex(state: string): number {
   return map[state] ?? 0;
 }
 
-// Icon shapes for each step (rendered as styled Views, not emoji)
-const STEP_ICONS = ['D', 'P', 'T', 'R', 'V'];
+// Step icon definitions — outline for inactive, filled for active/done
+const STEP_DEFS = [
+  { active: 'document-text',    inactive: 'document-text-outline'    },
+  { active: 'person',           inactive: 'person-outline'           },
+  { active: 'bicycle',          inactive: 'bicycle-outline'          },
+  { active: 'car',              inactive: 'car-outline'              },
+  { active: 'home',             inactive: 'home-outline'             },
+] as const;
+
+const NODE_SIZE  = 48;
+const PILL_PAD   = 6;
 
 function StatusStepBar({ state, accent, labels }: {
   state: string; accent: string; labels: string[];
 }) {
   const idx = getStepIndex(state);
+
   return (
-    <View style={ssb.container}>
-      {/* Track with dots and lines */}
-      <View style={ssb.track}>
-        {STEP_ICONS.map((_, i) => (
-          <React.Fragment key={i}>
-            <View style={ssb.stepCol}>
-              {/* Circle */}
+    <View style={ssb.wrapper}>
+      {/* Current status label */}
+      <Text style={[ssb.statusLabel, { color: accent }]} numberOfLines={1}>
+        {labels[idx]}
+      </Text>
+
+      {/* Dark pill track */}
+      <View style={ssb.pill}>
+        {STEP_DEFS.map((step, i) => {
+          const done   = i < idx;
+          const active = i === idx;
+          const future = i > idx;
+
+          return (
+            <React.Fragment key={i}>
+              {/* Connector line between nodes */}
+              {i > 0 && (
+                <View style={[
+                  ssb.connector,
+                  (done) ? { backgroundColor: accent } : { backgroundColor: 'rgba(255,255,255,0.12)' },
+                ]} />
+              )}
+
+              {/* Icon node */}
               <View style={[
-                ssb.circle,
-                i < idx  && { backgroundColor: accent },
-                i === idx && { backgroundColor: accent, transform: [{ scale: 1.15 }] },
-                i > idx  && { backgroundColor: 'transparent', borderWidth: 2, borderColor: 'rgba(28,28,30,0.15)' },
+                ssb.node,
+                done   && { backgroundColor: accent },
+                active && { backgroundColor: accent, shadowColor: accent, shadowOpacity: 0.55, shadowRadius: 10, shadowOffset: { width: 0, height: 0 }, elevation: 8 },
+                future && { backgroundColor: 'rgba(255,255,255,0.10)' },
               ]}>
-                {i < idx  && <View style={[ssb.checkDot, { backgroundColor: '#fff' }]} />}
-                {i === idx && <View style={[ssb.innerDot, { backgroundColor: '#fff' }]} />}
+                <Ionicons
+                  name={(done || active ? step.active : step.inactive) as any}
+                  size={22}
+                  color={done || active ? '#1C1C1E' : 'rgba(255,255,255,0.30)'}
+                />
               </View>
-              {/* Label below */}
-              <Text style={[ssb.stepLabel, { color: i <= idx ? accent : 'rgba(28,28,30,0.35)' }]}
-                numberOfLines={1}>
-                {labels[i]}
-              </Text>
-            </View>
-            {i < STEP_ICONS.length - 1 && (
-              <View style={[ssb.line, i < idx && { backgroundColor: accent }]} />
-            )}
-          </React.Fragment>
+            </React.Fragment>
+          );
+        })}
+      </View>
+
+      {/* Step labels row below */}
+      <View style={ssb.labelsRow}>
+        {STEP_DEFS.map((_, i) => (
+          <Text
+            key={i}
+            style={[ssb.stepLabel, { color: i <= idx ? accent : 'rgba(28,28,30,0.30)' }]}
+            numberOfLines={1}
+          >
+            {labels[i]}
+          </Text>
         ))}
       </View>
     </View>
@@ -65,14 +101,48 @@ function StatusStepBar({ state, accent, labels }: {
 }
 
 const ssb = StyleSheet.create({
-  container:  { paddingVertical: 8 },
-  track:      { flexDirection: 'row', alignItems: 'flex-start' },
-  stepCol:    { alignItems: 'center', width: 52 },
-  circle:     { width: 28, height: 28, borderRadius: 14, backgroundColor: 'rgba(28,28,30,0.10)', alignItems: 'center', justifyContent: 'center', marginBottom: 6 },
-  checkDot:   { width: 10, height: 10, borderRadius: 5 },
-  innerDot:   { width: 8, height: 8, borderRadius: 4 },
-  line:       { flex: 1, height: 2, backgroundColor: 'rgba(28,28,30,0.10)', marginTop: 13, marginHorizontal: -2 },
-  stepLabel:  { fontSize: 9, fontWeight: '600', textAlign: 'center', letterSpacing: 0.2 },
+  wrapper:     { paddingVertical: 4 },
+  statusLabel: { fontSize: 18, fontWeight: '800', letterSpacing: -0.3, marginBottom: 14 },
+
+  // Dark pill container
+  pill: {
+    flexDirection:     'row',
+    alignItems:        'center',
+    backgroundColor:   '#1C1C1E',
+    borderRadius:      999,
+    paddingVertical:   PILL_PAD,
+    paddingHorizontal: PILL_PAD,
+  },
+
+  // Icon circle node
+  node: {
+    width:          NODE_SIZE,
+    height:         NODE_SIZE,
+    borderRadius:   NODE_SIZE / 2,
+    alignItems:     'center',
+    justifyContent: 'center',
+  },
+
+  // Line connecting nodes inside pill
+  connector: {
+    flex:   1,
+    height: 4,
+    borderRadius: 2,
+  },
+
+  // Labels row below pill
+  labelsRow: {
+    flexDirection:   'row',
+    marginTop:       8,
+    paddingHorizontal: PILL_PAD,
+  },
+  stepLabel: {
+    flex:       1,
+    fontSize:   9,
+    fontWeight: '600',
+    textAlign:  'center',
+    letterSpacing: 0.1,
+  },
 });
 
 // ── Mock data (duplicated here so detail screen works standalone) ─────────────
@@ -212,7 +282,6 @@ export default function ClientTaskDetailScreen() {
 
           {/* Status bar */}
           <View style={styles.card}>
-            <Text style={styles.cardLabel}>{t.orderStatus}</Text>
             <StatusStepBar state={task.state} accent={COLORS.primary} labels={stepLabels} />
           </View>
 

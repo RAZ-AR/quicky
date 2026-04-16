@@ -4,10 +4,9 @@ import { useAppTheme } from '../../src/hooks/useAppTheme';
 import { FloatingTabBar, type TabConfig } from '../../src/components/FloatingTabBar';
 
 const CLIENT_TABS: TabConfig[] = [
-  { name: 'index',     icon: 'H', label: 'Главная' },
-  { name: 'tasks',     icon: 'Z', label: 'Заказы'  },
-  { name: 'executors', icon: 'N', label: 'Найти'   },
-  { name: 'profile',   icon: 'P', label: 'Профиль' },
+  { name: 'index',   ionIcon: 'home',   icon: 'H', label: 'Главная' },
+  { name: 'tasks',   ionIcon: 'list',   icon: 'Z', label: 'Заказы'  },
+  { name: 'profile', ionIcon: 'person', icon: 'P', label: 'Кабинет' },
 ];
 
 export default function ClientLayout() {
@@ -25,19 +24,19 @@ export default function ClientLayout() {
         <FloatingTabBar
           {...props}
           tabs={CLIENT_TABS}
-          accentColor={COLORS.tabBarActive}
-          centerAction={{ onPress: handleCreate, icon: '+' }}
+          accentColor={COLORS.primary}
+          actionButton={{ onPress: handleCreate }}
         />
       )}
     >
-      <Tabs.Screen name="index"     />
-      <Tabs.Screen name="tasks"     />
-      <Tabs.Screen name="executors" />
-      <Tabs.Screen name="profile"   />
-      <Tabs.Screen name="create"    options={{ href: null }} />
-      <Tabs.Screen name="voice"     options={{ href: null }} />
-      <Tabs.Screen name="clarify"   options={{ href: null }} />
-      <Tabs.Screen name="confirm"   options={{ href: null }} />
+      <Tabs.Screen name="index"      />
+      <Tabs.Screen name="tasks"      />
+      <Tabs.Screen name="profile"    />
+      <Tabs.Screen name="executors"  options={{ href: null }} />
+      <Tabs.Screen name="create"     options={{ href: null }} />
+      <Tabs.Screen name="voice"      options={{ href: null }} />
+      <Tabs.Screen name="clarify"    options={{ href: null }} />
+      <Tabs.Screen name="confirm"    options={{ href: null }} />
       <Tabs.Screen name="tasks/[id]" options={{ href: null }} />
     </Tabs>
   );

@@ -5,6 +5,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 import { useAuthStore } from '../../src/stores/authStore';
 import { useTaskStore } from '../../src/stores/taskStore';
 import {
@@ -83,37 +84,78 @@ function getStepIndex(state: string): number {
   return map[state] ?? 0;
 }
 
+const PB_STEP_DEFS = [
+  { active: 'document-text',  inactive: 'document-text-outline'  },
+  { active: 'person',         inactive: 'person-outline'         },
+  { active: 'bicycle',        inactive: 'bicycle-outline'        },
+  { active: 'car',            inactive: 'car-outline'            },
+  { active: 'home',           inactive: 'home-outline'           },
+] as const;
+
+const PB_NODE = 36;
+const PB_PAD  = 4;
+
 function ProgressBar({ state, accent, labels }: { state: string; accent: string; labels: string[] }) {
   const idx = getStepIndex(state);
   return (
     <View style={pb.wrap}>
-      <View style={pb.track}>
-        {labels.map((_, i) => (
-          <React.Fragment key={i}>
-            <View style={[pb.dot, i <= idx && { backgroundColor: accent }, i === idx && pb.dotActive]}>
-              {i < idx  && <View style={[pb.check, { backgroundColor: accent }]} />}
-              {i === idx && <View style={[pb.inner, { backgroundColor: accent }]} />}
-            </View>
-            {i < labels.length - 1 && (
-              <View style={[pb.line, i < idx && { backgroundColor: accent }]} />
-            )}
-          </React.Fragment>
-        ))}
-      </View>
+      {/* Current step label */}
       <Text style={[pb.label, { color: accent }]}>{labels[idx]}</Text>
+
+      {/* Compact dark pill */}
+      <View style={pb.pill}>
+        {PB_STEP_DEFS.map((step, i) => {
+          const done   = i < idx;
+          const active = i === idx;
+          const future = i > idx;
+          return (
+            <React.Fragment key={i}>
+              {i > 0 && (
+                <View style={[pb.connector, done ? { backgroundColor: accent } : { backgroundColor: 'rgba(255,255,255,0.12)' }]} />
+              )}
+              <View style={[
+                pb.node,
+                done   && { backgroundColor: accent },
+                active && { backgroundColor: accent },
+                future && { backgroundColor: 'rgba(255,255,255,0.10)' },
+              ]}>
+                <Ionicons
+                  name={((done || active) ? step.active : step.inactive) as any}
+                  size={16}
+                  color={(done || active) ? '#1C1C1E' : 'rgba(255,255,255,0.30)'}
+                />
+              </View>
+            </React.Fragment>
+          );
+        })}
+      </View>
     </View>
   );
 }
 
 const pb = StyleSheet.create({
-  wrap:      { marginTop: 14 },
-  track:     { flexDirection: 'row', alignItems: 'center', marginBottom: 6 },
-  dot:       { width: 18, height: 18, borderRadius: 9, backgroundColor: 'rgba(28,28,30,0.12)', alignItems: 'center', justifyContent: 'center' },
-  dotActive: { backgroundColor: 'transparent', borderWidth: 2 },
-  inner:     { width: 6, height: 6, borderRadius: 3 },
-  check:     { width: 8, height: 8, borderRadius: 4 },
-  line:      { flex: 1, height: 2, backgroundColor: 'rgba(28,28,30,0.10)' },
-  label:     { fontSize: 11, fontWeight: '700', letterSpacing: 0.3 },
+  wrap:      { marginTop: 12 },
+  label:     { fontSize: 11, fontWeight: '700', letterSpacing: 0.3, marginBottom: 8 },
+  pill: {
+    flexDirection:     'row',
+    alignItems:        'center',
+    backgroundColor:   '#1C1C1E',
+    borderRadius:      999,
+    paddingVertical:   PB_PAD,
+    paddingHorizontal: PB_PAD,
+  },
+  node: {
+    width:          PB_NODE,
+    height:         PB_NODE,
+    borderRadius:   PB_NODE / 2,
+    alignItems:     'center',
+    justifyContent: 'center',
+  },
+  connector: {
+    flex:         1,
+    height:       3,
+    borderRadius: 2,
+  },
 });
 
 // ── Language selector ────────────────────────────────────────────────────────

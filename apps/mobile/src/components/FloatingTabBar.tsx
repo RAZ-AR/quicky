@@ -3,261 +3,182 @@ import {
   View, Text, StyleSheet, TouchableOpacity,
   Animated, useWindowDimensions,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { BottomTabBarProps } from '@react-navigation/bottom-tabs';
-import { useAppTheme } from '../hooks/useAppTheme';
 
 export interface TabConfig {
-  name: string;
-  icon: string;
-  label: string;
+  name:     string;
+  icon:     string;          // fallback text (unused if ionIcon set)
+  ionIcon?: string;          // Ionicons name — preferred
+  label:    string;
 }
 
 interface FloatingTabBarProps extends BottomTabBarProps {
-  tabs: TabConfig[];
-  accentColor: string;
-  centerAction?: {
-    onPress: () => void;
-    icon?: string;
-  };
+  tabs:          TabConfig[];
+  accentColor:   string;
+  /** Orange action button to the right of the pill */
+  actionButton?: { onPress: () => void };
+  /** legacy: center action (ignored, use actionButton) */
+  centerAction?: { onPress: () => void; icon?: string };
 }
 
-const SIDE_PAD    = 16;
-const BAR_HEIGHT  = 58;
-const CENTER_SIZE = 52;
+const SIDE_PAD   = 20;
+const BAR_HEIGHT = 58;
+const BTN_SIZE   = 54;
+const BTN_GAP    = 10;
+const ACTIVE_H   = 44;
 
-export function FloatingTabBar({ state, navigation, tabs, accentColor, centerAction }: FloatingTabBarProps) {
-  const { COLORS, isDark } = useAppTheme();
+// ── Dark pill style (like reference) ──────────────────────────────────────────
+export function FloatingTabBar({
+  state, navigation,
+  tabs, accentColor,
+  actionButton, centerAction,
+}: FloatingTabBarProps) {
   const insets = useSafeAreaInsets();
-  const { width: SCREEN_WIDTH } = useWindowDimensions();
+  const { width: SCREEN_W } = useWindowDimensions();
 
-  const containerWidth = SCREEN_WIDTH - SIDE_PAD * 2;
-  const hasCenterAction = !!centerAction && tabs.length === 4;
+  // Support legacy centerAction as actionButton fallback
+  const btnAction = actionButton ?? centerAction;
 
   const activeIndex = tabs.findIndex(t => t.name === state.routes[state.index]?.name);
-  const safeIdx = Math.max(0, activeIndex);
+  const safeIdx     = Math.max(0, activeIndex);
 
-  const totalHeight = BAR_HEIGHT + insets.bottom + 16;
-  const bgColor = isDark ? '#242220' : '#FFFFFF';
-  const borderColor = isDark ? 'rgba(245,243,239,0.09)' : 'rgba(28,28,30,0.08)';
+  // Animation: active label width expands
+  const widthAnims = useRef(tabs.map((_, i) => new Animated.Value(i === 0 ? 1 : 0))).current;
 
-  if (hasCenterAction) {
-    // Split: 2 tabs on left, gap in middle, 2 tabs on right
-    const leftTabs  = tabs.slice(0, 2);
-    const rightTabs = tabs.slice(2, 4);
-    const gapWidth  = CENTER_SIZE + 20;
-    const sideWidth = (containerWidth - gapWidth) / 2;
-    const tabWidth  = sideWidth / 2;
+  useEffect(() => {
+    tabs.forEach((_, i) => {
+      Animated.spring(widthAnims[i], {
+        toValue: i === safeIdx ? 1 : 0,
+        useNativeDriver: false,
+        tension: 180,
+        friction: 20,
+      }).start();
+    });
+  }, [safeIdx]);
 
-    return (
-      <View style={[styles.root, { height: totalHeight, paddingBottom: Math.max(insets.bottom, 8) }]}>
-        {/* Tab pill bar */}
-        <View
-          style={[
-            styles.splitBar,
-            {
-              width: containerWidth,
-              height: BAR_HEIGHT,
-              backgroundColor: bgColor,
-              borderColor,
-            },
-          ]}
-        >
-          {/* Left 2 tabs */}
-          {leftTabs.map((tab, i) => {
+  const totalHeight = BAR_HEIGHT + Math.max(insets.bottom, 8) + 8;
+  const containerW  = SCREEN_W - SIDE_PAD * 2;
+  const pillW       = btnAction ? containerW - BTN_SIZE - BTN_GAP : containerW;
+
+  return (
+    <View style={[s.root, { height: totalHeight, paddingBottom: Math.max(insets.bottom, 8) }]}>
+      <View style={[s.row, { width: containerW }]}>
+
+        {/* ── Dark pill ── */}
+        <View style={[s.pill, { width: pillW, height: BAR_HEIGHT }]}>
+          {tabs.map((tab, i) => {
             const focused = safeIdx === i;
             const route   = state.routes.find(r => r.name === tab.name);
+            const iconName = (tab.ionIcon ?? 'ellipse') as any;
+
+            // Animate active tab width: inactive=48, active=116
+            const tabW = widthAnims[i].interpolate({
+              inputRange:  [0, 1],
+              outputRange: [48, 116],
+            });
+            const labelOpacity = widthAnims[i];
+
             return (
               <TouchableOpacity
                 key={tab.name}
-                style={[styles.tab, { width: tabWidth }]}
-                onPress={() => { if (!focused && route) navigation.navigate(route.name); }}
-                activeOpacity={0.7}
+                onPress={() => { if (route) navigation.navigate(route.name); }}
+                activeOpacity={0.85}
               >
-                <Text style={[styles.icon, { opacity: focused ? 1 : 0.35 }]}>{tab.icon}</Text>
-                <Text style={[
-                  styles.label,
-                  { color: focused ? accentColor : COLORS.tabBarInactive, fontWeight: focused ? '700' : '500' },
-                ]}>
-                  {tab.label}
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
-
-          {/* Center gap */}
-          <View style={{ width: gapWidth }} />
-
-          {/* Right 2 tabs */}
-          {rightTabs.map((tab, i) => {
-            const realIdx = i + 2;
-            const focused = safeIdx === realIdx;
-            const route   = state.routes.find(r => r.name === tab.name);
-            return (
-              <TouchableOpacity
-                key={tab.name}
-                style={[styles.tab, { width: tabWidth }]}
-                onPress={() => { if (!focused && route) navigation.navigate(route.name); }}
-                activeOpacity={0.7}
-              >
-                <Text style={[styles.icon, { opacity: focused ? 1 : 0.35 }]}>{tab.icon}</Text>
-                <Text style={[
-                  styles.label,
-                  { color: focused ? accentColor : COLORS.tabBarInactive, fontWeight: focused ? '700' : '500' },
-                ]}>
-                  {tab.label}
-                </Text>
+                <Animated.View
+                  style={[
+                    s.tabInner,
+                    focused ? s.tabActive : s.tabInactive,
+                    { width: tabW, height: ACTIVE_H },
+                  ]}
+                >
+                  <Ionicons
+                    name={focused ? iconName : (`${iconName}-outline` as any)}
+                    size={20}
+                    color={focused ? '#1C1C1E' : 'rgba(255,255,255,0.55)'}
+                  />
+                  <Animated.Text
+                    style={[s.tabLabel, { opacity: labelOpacity }]}
+                    numberOfLines={1}
+                  >
+                    {tab.label}
+                  </Animated.Text>
+                </Animated.View>
               </TouchableOpacity>
             );
           })}
         </View>
 
-        {/* Center action button — floating above bar */}
-        <TouchableOpacity
-          style={[
-            styles.centerBtn,
-            {
-              backgroundColor: accentColor,
-              bottom: Math.max(insets.bottom, 8) + BAR_HEIGHT / 2 - CENTER_SIZE / 2,
-              shadowColor: accentColor,
-            },
-          ]}
-          onPress={centerAction!.onPress}
-          activeOpacity={0.85}
-        >
-          <Text style={styles.centerBtnIcon}>{centerAction!.icon ?? '+'}</Text>
-        </TouchableOpacity>
-      </View>
-    );
-  }
-
-  // ── Standard bar (no center action) ──
-  const INDICATOR_W = 52;
-  const INDICATOR_H = 40;
-  const tabWidth    = containerWidth / tabs.length;
-
-  const slideAnim = useRef(new Animated.Value(safeIdx)).current;
-  useEffect(() => {
-    Animated.spring(slideAnim, {
-      toValue: safeIdx,
-      useNativeDriver: true,
-      tension: 120,
-      friction: 14,
-    }).start();
-  }, [safeIdx]);
-
-  const indicatorX = slideAnim.interpolate({
-    inputRange: tabs.map((_, i) => i),
-    outputRange: tabs.map((_, i) => {
-      const tabCenter = tabWidth * i + tabWidth / 2;
-      return tabCenter - INDICATOR_W / 2;
-    }),
-  });
-
-  return (
-    <View style={[styles.root, { height: BAR_HEIGHT + insets.bottom + 12, paddingBottom: Math.max(insets.bottom, 8) }]}>
-      <View
-        style={[
-          styles.container,
-          {
-            width: containerWidth,
-            height: BAR_HEIGHT,
-            backgroundColor: bgColor,
-            borderColor,
-          },
-        ]}
-      >
-        <Animated.View
-          style={[
-            styles.indicator,
-            {
-              width: INDICATOR_W,
-              height: INDICATOR_H,
-              backgroundColor: isDark ? 'rgba(245,243,239,0.10)' : 'rgba(28,28,30,0.07)',
-              transform: [{ translateX: indicatorX }],
-            },
-          ]}
-        />
-        {tabs.map((tab, index) => {
-          const focused = safeIdx === index;
-          const route   = state.routes.find(r => r.name === tab.name);
-          return (
-            <TouchableOpacity
-              key={tab.name}
-              style={[styles.tab, { width: tabWidth }]}
-              onPress={() => { if (!focused && route) navigation.navigate(route.name); }}
-              activeOpacity={0.7}
-            >
-              <View style={styles.tabContent}>
-                <Text style={[styles.icon, { opacity: focused ? 1 : 0.4, transform: [{ scale: focused ? 1.1 : 1 }] }]}>
-                  {tab.icon}
-                </Text>
-                <Text style={[styles.label, { color: focused ? accentColor : COLORS.tabBarInactive, fontWeight: focused ? '700' : '500' }]}>
-                  {tab.label}
-                </Text>
-              </View>
-            </TouchableOpacity>
-          );
-        })}
+        {/* ── Orange action button ── */}
+        {btnAction && (
+          <TouchableOpacity
+            style={[s.actionBtn, { backgroundColor: accentColor, shadowColor: accentColor }]}
+            onPress={btnAction.onPress}
+            activeOpacity={0.85}
+          >
+            <Ionicons name="add" size={26} color="#FFFFFF" />
+          </TouchableOpacity>
+        )}
       </View>
     </View>
   );
 }
 
-const styles = StyleSheet.create({
+const s = StyleSheet.create({
   root: {
+    alignItems:      'center',
+    justifyContent:  'flex-end',
     backgroundColor: 'transparent',
-    alignItems: 'center',
-    justifyContent: 'flex-end',
-    paddingTop: 4,
   },
-  container: {
-    borderRadius: 999,
-    borderWidth: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    overflow: 'hidden',
+  row: {
+    flexDirection:  'row',
+    alignItems:     'center',
+    gap:            BTN_GAP,
   },
-  splitBar: {
-    borderRadius: 999,
-    borderWidth: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
+  pill: {
+    flexDirection:   'row',
+    alignItems:      'center',
+    justifyContent:  'space-evenly',
+    paddingHorizontal: 6,
+    backgroundColor: '#1C1C1E',
+    borderRadius:    999,
+    // subtle shadow
+    shadowColor:     '#000',
+    shadowOffset:    { width: 0, height: 4 },
+    shadowOpacity:   0.25,
+    shadowRadius:    12,
+    elevation:       12,
   },
-  indicator: {
-    position: 'absolute',
-    top: (BAR_HEIGHT - 40) / 2,
-    borderRadius: 999,
-  },
-  tab: {
-    alignItems: 'center',
+  tabInner: {
+    flexDirection:  'row',
+    alignItems:     'center',
     justifyContent: 'center',
-    height: BAR_HEIGHT,
+    borderRadius:   999,
+    gap:            6,
+    overflow:       'hidden',
   },
-  tabContent: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 1,
+  tabActive: {
+    backgroundColor: '#FFFFFF',
+    paddingHorizontal: 4,
   },
-  icon:  { fontSize: 17 },
-  label: { fontSize: 9.5, letterSpacing: 0.2 },
-  centerBtn: {
-    position: 'absolute',
-    alignSelf: 'center',
-    width: CENTER_SIZE,
-    height: CENTER_SIZE,
-    borderRadius: CENTER_SIZE / 2,
-    alignItems: 'center',
+  tabInactive: {
+    backgroundColor: 'transparent',
+  },
+  tabLabel: {
+    fontSize:   13,
+    fontWeight: '700',
+    color:      '#1C1C1E',
+  },
+  actionBtn: {
+    width:        BTN_SIZE,
+    height:       BTN_SIZE,
+    borderRadius: BTN_SIZE / 2,
+    alignItems:   'center',
     justifyContent: 'center',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.40,
-    shadowRadius: 10,
-    elevation: 10,
-  },
-  centerBtnIcon: {
-    fontSize: 26,
-    fontWeight: '300',
-    color: '#FFFFFF',
-    lineHeight: 30,
+    shadowRadius:  10,
+    elevation:     10,
   },
 });

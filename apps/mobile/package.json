@@ -9,6 +9,7 @@
     "web": "EXPO_ROUTER_APP_ROOT=app expo start --web"
   },
   "dependencies": {
+    "@expo/vector-icons": "^15.1.1",
     "@react-native-async-storage/async-storage": "^2.2.0",
     "@react-navigation/native": "^7.1.34",
     "axios": "^1.13.6",
