@@ -6,11 +6,10 @@ import * as Location from 'expo-location';
 import { useTaskStore } from '../../src/stores/taskStore';
 import { useAuthStore } from '../../src/stores/authStore';
 import { getSocket } from '../../src/services/socket';
-import { RADIUS, TASK_STATE_COLORS, TASK_STATE_LABELS, type AppColors } from '../../src/constants/config';
+import { RADIUS, CATEGORIES, TASK_STATE_COLORS, TASK_STATE_LABELS, type AppColors } from '../../src/constants/config';
 import { useAppTheme } from '../../src/hooks/useAppTheme';
 import type { Task } from '../../src/services/api';
 
-// ── Countdown timer ────────────────────────────────────────────────────────────
 function Countdown({ expiresAt, styles, COLORS }: { expiresAt: string; styles: any; COLORS: AppColors }) {
   const [secs, setSecs] = useState(() => Math.max(0, Math.floor((new Date(expiresAt).getTime() - Date.now()) / 1000)));
   const ref = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -26,18 +25,6 @@ function Countdown({ expiresAt, styles, COLORS }: { expiresAt: string; styles: a
       <Text style={[styles.countdownText, isHot && { color: COLORS.danger }]}>
         {m}:{String(s).padStart(2, '0')}
       </Text>
-    </View>
-  );
-}
-
-// ── Stat pill ──────────────────────────────────────────────────────────────────
-function StatPill({ value, label, color, styles }: {
-  value: string | number; label: string; color: string; styles: any;
-}) {
-  return (
-    <View style={styles.statPill}>
-      <Text style={[styles.statValue, { color }]}>{value}</Text>
-      <Text style={styles.statLabel}>{label}</Text>
     </View>
   );
 }
@@ -74,7 +61,7 @@ export default function ExecutorDashboard() {
 
   const activeTask = myTasks.find(t => ['accepted', 'in_progress', 'pending_client'].includes(t.state));
   const hotOrders  = feed.filter(t => t.expires_at && new Date(t.expires_at).getTime() - Date.now() < 600_000).slice(0, 3);
-  const newOrders  = feed.filter(t => !hotOrders.includes(t)).slice(0, 6);
+  const newOrders  = feed.filter(t => !hotOrders.includes(t)).slice(0, 8);
   const completed  = myTasks.filter(t => t.state === 'completed' || t.state === 'rated').length;
 
   const greetHour = new Date().getHours();
@@ -83,14 +70,13 @@ export default function ExecutorDashboard() {
   return (
     <View style={styles.root}>
       <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
-
       <SafeAreaView style={styles.safe} edges={['top']}>
         <ScrollView
           contentContainerStyle={styles.scroll}
           showsVerticalScrollIndicator={false}
           refreshControl={<RefreshControl refreshing={isFeedLoading} onRefresh={fetchAll} tintColor={COLORS.executor} />}
         >
-          {/* ── Header ─────────────────────────── */}
+          {/* Header */}
           <View style={styles.header}>
             <View>
               <Text style={styles.greeting}>{greeting}</Text>
@@ -105,14 +91,23 @@ export default function ExecutorDashboard() {
             </TouchableOpacity>
           </View>
 
-          {/* ── Stats row ──────────────────────── */}
+          {/* Stats */}
           <View style={styles.statsRow}>
-            <StatPill value={feed.length}  label="Новых"     color={COLORS.executor} styles={styles} />
-            <StatPill value={completed}    label="Выполнено" color={COLORS.success}  styles={styles} />
-            <StatPill value={hotOrders.length} label="Горящих" color={COLORS.danger} styles={styles} />
+            <View style={[styles.statPill, { backgroundColor: COLORS.glassCyan }]}>
+              <Text style={[styles.statValue, { color: isDark ? COLORS.text : '#0E3A34' }]}>{feed.length}</Text>
+              <Text style={[styles.statLabel, { color: isDark ? COLORS.textMuted : '#0E3A3499' }]}>Новых</Text>
+            </View>
+            <View style={[styles.statPill, { backgroundColor: COLORS.glassViolet }]}>
+              <Text style={[styles.statValue, { color: isDark ? COLORS.text : '#4A3808' }]}>{completed}</Text>
+              <Text style={[styles.statLabel, { color: isDark ? COLORS.textMuted : '#4A380899' }]}>Сделано</Text>
+            </View>
+            <View style={[styles.statPill, { backgroundColor: COLORS.glass, borderWidth: 1, borderColor: COLORS.border }]}>
+              <Text style={[styles.statValue, { color: COLORS.danger }]}>{hotOrders.length}</Text>
+              <Text style={[styles.statLabel, { color: COLORS.textMuted }]}>Горящих</Text>
+            </View>
           </View>
 
-          {/* ── Active task ─────────────────────── */}
+          {/* Active task */}
           {activeTask && (
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>Текущий заказ</Text>
@@ -121,43 +116,41 @@ export default function ExecutorDashboard() {
                 onPress={() => router.push({ pathname: '/(executor)/task/[id]', params: { id: activeTask.id } })}
                 activeOpacity={0.85}
               >
-                <View style={styles.activeHeader}>
-                  <Text style={styles.activeTitle} numberOfLines={2}>{activeTask.item_description ?? 'Заказ'}</Text>
-                  <View style={[styles.badge, { backgroundColor: TASK_STATE_COLORS[activeTask.state] + '20' }]}>
-                    <Text style={[styles.badgeText, { color: TASK_STATE_COLORS[activeTask.state] }]}>
-                      {TASK_STATE_LABELS[activeTask.state]}
-                    </Text>
+                <View style={styles.activeTop}>
+                  <Text style={styles.activeCat}>В РАБОТЕ</Text>
+                  <View style={[styles.badge, { backgroundColor: 'rgba(0,0,0,0.12)' }]}>
+                    <Text style={styles.badgeText}>{TASK_STATE_LABELS[activeTask.state]}</Text>
                   </View>
                 </View>
+                <Text style={styles.activeTitle} numberOfLines={2}>{activeTask.item_description ?? 'Заказ'}</Text>
                 <Text style={styles.activeAddr}>📍 {activeTask.to_location?.address ?? '—'}</Text>
-                <View style={styles.activeFooter}>
+                <View style={styles.activeBottom}>
                   <Text style={styles.activePrice}>{activeTask.price_final} ₽</Text>
-                  <Text style={styles.activeAction}>Открыть →</Text>
+                  <TouchableOpacity style={styles.activeOpenBtn}>
+                    <Text style={styles.activeOpenText}>Открыть →</Text>
+                  </TouchableOpacity>
                 </View>
               </TouchableOpacity>
             </View>
           )}
 
-          {/* ── Hot orders ──────────────────────── */}
+          {/* Hot orders */}
           {hotOrders.length > 0 && (
             <View style={styles.section}>
               <View style={styles.sectionHeader}>
-                <Text style={styles.sectionTitle}>Горящие</Text>
-                <View style={styles.hotPill}>
-                  <Text style={styles.hotPillText}>🔥 горит</Text>
-                </View>
+                <Text style={styles.sectionTitle}>Горящие 🔥</Text>
               </View>
               {hotOrders.map(task => (
                 <OrderCard
                   key={task.id} task={task} hot
-                  styles={styles} COLORS={COLORS}
+                  styles={styles} COLORS={COLORS} isDark={isDark}
                   onPress={() => router.push({ pathname: '/(executor)/task/[id]', params: { id: task.id } })}
                 />
               ))}
             </View>
           )}
 
-          {/* ── New orders ──────────────────────── */}
+          {/* New orders */}
           {newOrders.length > 0 && (
             <View style={styles.section}>
               <View style={styles.sectionHeader}>
@@ -169,7 +162,7 @@ export default function ExecutorDashboard() {
               {newOrders.map(task => (
                 <OrderCard
                   key={task.id} task={task}
-                  styles={styles} COLORS={COLORS}
+                  styles={styles} COLORS={COLORS} isDark={isDark}
                   onPress={() => router.push({ pathname: '/(executor)/task/[id]', params: { id: task.id } })}
                 />
               ))}
@@ -186,7 +179,6 @@ export default function ExecutorDashboard() {
               <Text style={styles.emptyHint}>Потяните вниз для обновления</Text>
             </View>
           )}
-
           <View style={{ height: 100 }} />
         </ScrollView>
       </SafeAreaView>
@@ -194,125 +186,89 @@ export default function ExecutorDashboard() {
   );
 }
 
-// ── Order card ─────────────────────────────────────────────────────────────────
-function OrderCard({ task, hot, onPress, styles, COLORS }: {
-  task: Task; hot?: boolean; onPress: () => void; styles: any; COLORS: AppColors;
+function OrderCard({ task, hot, onPress, styles, COLORS, isDark }: {
+  task: Task; hot?: boolean; onPress: () => void; styles: any; COLORS: AppColors; isDark: boolean;
 }) {
+  const cat = CATEGORIES.find(c => c.key === (task as any).category) ?? CATEGORIES[CATEGORIES.length - 1];
+  const cardBg = hot ? COLORS.danger + '18' : (isDark ? cat.dark + '30' : cat.color);
+  const textCol = hot ? COLORS.danger : (isDark ? COLORS.text : cat.textColor);
+  const subCol  = hot ? COLORS.danger + '99' : (isDark ? COLORS.textMuted : cat.textColor + '99');
   return (
-    <TouchableOpacity style={styles.orderCard} onPress={onPress} activeOpacity={0.8}>
-      <View style={[styles.orderAccent, { backgroundColor: hot ? COLORS.danger : COLORS.executor }]} />
-      <View style={styles.orderContent}>
-        <View style={{ flex: 1, marginRight: 12 }}>
-          <Text style={styles.orderTitle} numberOfLines={2}>{task.item_description ?? 'Заказ'}</Text>
-          <Text style={styles.orderAddr} numberOfLines={1}>
-            {task.to_location?.address ? `📍 ${task.to_location.address}` : '—'}
-          </Text>
-          {task.category && (
-            <View style={styles.categoryPill}>
-              <Text style={styles.categoryText}>{task.category}</Text>
-            </View>
-          )}
-        </View>
-        <View style={styles.orderRight}>
-          <Text style={[styles.orderPrice, { color: hot ? COLORS.danger : COLORS.executor }]}>
-            {task.price_final} ₽
-          </Text>
-          {hot && task.expires_at && <Countdown expiresAt={task.expires_at} styles={styles} COLORS={COLORS} />}
-        </View>
+    <TouchableOpacity style={[styles.orderCard, { backgroundColor: cardBg }]} onPress={onPress} activeOpacity={0.8}>
+      <View style={styles.orderTop}>
+        <Text style={[styles.orderCat, { color: subCol }]}>{cat.icon} {cat.label.toUpperCase()}</Text>
+        {hot && task.expires_at && <Countdown expiresAt={task.expires_at} styles={styles} COLORS={COLORS} />}
       </View>
+      <View style={styles.orderMiddle}>
+        <Text style={[styles.orderTitle, { color: textCol }]} numberOfLines={2}>{task.item_description ?? 'Заказ'}</Text>
+        <Text style={[styles.orderPrice, { color: textCol }]}>{task.price_final} ₽</Text>
+      </View>
+      {(task as any).to_location?.address && (
+        <Text style={[styles.orderAddr, { color: subCol }]} numberOfLines={1}>
+          📍 {(task as any).to_location.address}
+        </Text>
+      )}
     </TouchableOpacity>
   );
 }
 
-// ── Styles ─────────────────────────────────────────────────────────────────────
 function makeStyles(C: AppColors, isDark: boolean, R = RADIUS) {
   return StyleSheet.create({
-    root: { flex: 1, backgroundColor: C.bg },
-    safe: { flex: 1 },
+    root:   { flex: 1, backgroundColor: C.bg },
+    safe:   { flex: 1 },
     scroll: { paddingHorizontal: 20, paddingTop: 8 },
 
-    // Header
-    header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 },
-    greeting: { fontSize: 13, color: C.textMuted, fontWeight: '500', marginBottom: 2 },
-    name: { fontSize: 32, fontWeight: '800', color: C.text, letterSpacing: -0.8 },
+    header:    { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 },
+    greeting:  { fontSize: 13, color: C.textMuted, fontWeight: '500', marginBottom: 2 },
+    name:      { fontSize: 32, fontWeight: '800', color: C.text, letterSpacing: -0.8 },
     avatarBtn: {
       width: 46, height: 46, borderRadius: 23,
       backgroundColor: C.glassCyan,
-      borderWidth: 1, borderColor: C.border,
       alignItems: 'center', justifyContent: 'center',
     },
-    avatarText: { color: C.text, fontWeight: '700', fontSize: 17 },
+    avatarText: { color: isDark ? C.text : '#0E3A34', fontWeight: '800', fontSize: 17 },
 
-    // Stats
     statsRow: { flexDirection: 'row', gap: 8, marginBottom: 28 },
     statPill: {
-      flex: 1, borderRadius: R.full,
-      backgroundColor: C.bgLayer,
-      borderWidth: 1, borderColor: C.border,
-      flexDirection: 'row', alignItems: 'center',
-      paddingHorizontal: 12, paddingVertical: 10, gap: 8,
+      flex: 1, borderRadius: R.xl,
+      paddingHorizontal: 14, paddingVertical: 12,
+      alignItems: 'center',
     },
-    statValue: { fontSize: 16, fontWeight: '800' },
-    statLabel: { fontSize: 11, color: C.textMuted, fontWeight: '600' },
+    statValue: { fontSize: 22, fontWeight: '800', marginBottom: 2 },
+    statLabel: { fontSize: 11, fontWeight: '600' },
 
-    // Sections
-    section: { marginBottom: 24 },
+    section:       { marginBottom: 24 },
     sectionHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
-    sectionTitle: { flex: 1, fontSize: 18, fontWeight: '800', color: C.text, letterSpacing: -0.3, marginBottom: 12 },
-    seeAll: { fontSize: 14, color: C.executor, fontWeight: '600' },
-    hotPill: {
-      backgroundColor: C.dangerGlow,
-      borderRadius: R.full,
-      paddingHorizontal: 10, paddingVertical: 3,
-      borderWidth: 1, borderColor: C.danger + '25',
-    },
-    hotPillText: { color: C.danger, fontSize: 11, fontWeight: '700' },
+    sectionTitle:  { flex: 1, fontSize: 20, fontWeight: '800', color: C.text, letterSpacing: -0.4, marginBottom: 12 },
+    seeAll:        { fontSize: 14, color: C.textMuted, fontWeight: '600' },
 
-    // Active task card — sage green
     activeCard: {
-      borderRadius: R.xxl,
+      borderRadius: R.xxl, padding: 20,
       backgroundColor: C.glassCyan,
-      borderWidth: 1, borderColor: C.border,
-      padding: 20,
     },
-    activeHeader: { flexDirection: 'row', alignItems: 'flex-start', marginBottom: 10 },
-    activeTitle:  { flex: 1, fontSize: 17, fontWeight: '700', color: C.text, marginRight: 8 },
-    activeAddr:   { fontSize: 13, color: C.textMuted, marginBottom: 16 },
-    activeFooter: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-    activePrice:  { fontSize: 28, fontWeight: '800', color: C.text },
-    activeAction: { fontSize: 14, color: C.executor, fontWeight: '600' },
-    badge: { borderRadius: R.sm, paddingHorizontal: 8, paddingVertical: 4 },
-    badgeText: { fontSize: 11, fontWeight: '600' },
+    activeTop:    { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 },
+    activeCat:    { fontSize: 10, fontWeight: '800', letterSpacing: 1.2, color: isDark ? C.textMuted : '#0E3A3499' },
+    activeTitle:  { fontSize: 20, fontWeight: '800', color: isDark ? C.text : '#0E3A34', letterSpacing: -0.4, marginBottom: 8 },
+    activeAddr:   { fontSize: 13, color: isDark ? C.textMuted : '#0E3A3499', marginBottom: 16 },
+    activeBottom: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+    activePrice:  { fontSize: 28, fontWeight: '800', color: isDark ? C.text : '#0E3A34' },
+    activeOpenBtn:{ backgroundColor: 'rgba(0,0,0,0.12)', borderRadius: R.full, paddingHorizontal: 14, paddingVertical: 6 },
+    activeOpenText:{ fontSize: 13, fontWeight: '700', color: isDark ? C.text : '#0E3A34' },
+    badge:        { borderRadius: R.sm, paddingHorizontal: 10, paddingVertical: 4 },
+    badgeText:    { fontSize: 11, fontWeight: '600', color: isDark ? C.text : '#0E3A34' },
 
-    // Order cards
-    orderCard: {
-      borderRadius: R.xl, marginBottom: 10, minHeight: 72,
-      backgroundColor: C.glass,
-      borderWidth: 1, borderColor: C.border,
-      flexDirection: 'row', overflow: 'hidden',
-    },
-    orderAccent: { width: 4, borderTopLeftRadius: R.xl, borderBottomLeftRadius: R.xl },
-    orderContent: { flex: 1, flexDirection: 'row', alignItems: 'center', padding: 16 },
-    orderTitle: { fontSize: 15, fontWeight: '600', color: C.text, marginBottom: 4 },
-    orderAddr:  { fontSize: 12, color: C.textMuted, marginBottom: 6 },
-    orderRight: { alignItems: 'flex-end', paddingLeft: 8 },
-    orderPrice: { fontSize: 16, fontWeight: '800', marginBottom: 4 },
-    categoryPill: {
-      alignSelf: 'flex-start',
-      backgroundColor: C.glassCyan,
-      borderRadius: R.full, paddingHorizontal: 8, paddingVertical: 2,
-    },
-    categoryText: { fontSize: 11, color: C.executor, fontWeight: '600' },
+    orderCard:   { borderRadius: R.xl, marginBottom: 10, padding: 16 },
+    orderTop:    { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
+    orderCat:    { fontSize: 10, fontWeight: '800', letterSpacing: 1 },
+    orderMiddle: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 },
+    orderTitle:  { flex: 1, fontSize: 16, fontWeight: '700', letterSpacing: -0.2, marginRight: 12 },
+    orderPrice:  { fontSize: 20, fontWeight: '800' },
+    orderAddr:   { fontSize: 12 },
 
-    // Countdown
-    countdown: {
-      backgroundColor: C.bgLayer,
-      borderRadius: R.sm, paddingHorizontal: 8, paddingVertical: 3,
-    },
+    countdown:     { backgroundColor: C.bgLayer, borderRadius: R.sm, paddingHorizontal: 8, paddingVertical: 3 },
     countdownText: { fontSize: 12, fontWeight: '700', color: C.textMuted },
 
-    // Empty
-    empty: { alignItems: 'center', paddingTop: 60 },
+    empty:     { alignItems: 'center', paddingTop: 60 },
     emptyIcon: { fontSize: 48, marginBottom: 16 },
     emptyText: { fontSize: 16, fontWeight: '600', color: C.text, marginBottom: 8 },
     emptyHint: { fontSize: 14, color: C.textMuted },
