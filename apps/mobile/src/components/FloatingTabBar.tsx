@@ -73,38 +73,31 @@ export function FloatingTabBar({
             const route   = state.routes.find(r => r.name === tab.name);
             const iconName = (tab.ionIcon ?? 'ellipse') as any;
 
-            // Animate active tab width: inactive=48, active=116
-            const tabW = widthAnims[i].interpolate({
-              inputRange:  [0, 1],
-              outputRange: [48, 116],
-            });
+            // Active: icon + label pill. Inactive: icon only (no pill)
             const labelOpacity = widthAnims[i];
+            const labelMaxW = widthAnims[i].interpolate({
+              inputRange:  [0, 1],
+              outputRange: [0, 80],
+            });
 
             return (
               <TouchableOpacity
                 key={tab.name}
                 onPress={() => { if (route) navigation.navigate(route.name); }}
-                activeOpacity={0.85}
+                activeOpacity={0.75}
+                style={focused ? s.tabActive : s.tabInactive}
               >
-                <Animated.View
-                  style={[
-                    s.tabInner,
-                    focused ? s.tabActive : s.tabInactive,
-                    { width: tabW, height: ACTIVE_H },
-                  ]}
+                <Ionicons
+                  name={iconName}
+                  size={24}
+                  color={focused ? '#1C1C1E' : 'rgba(255,255,255,0.70)'}
+                />
+                <Animated.Text
+                  style={[s.tabLabel, { opacity: labelOpacity, maxWidth: labelMaxW }]}
+                  numberOfLines={1}
                 >
-                  <Ionicons
-                    name={focused ? iconName : (`${iconName}-outline` as any)}
-                    size={20}
-                    color={focused ? '#1C1C1E' : 'rgba(255,255,255,0.55)'}
-                  />
-                  <Animated.Text
-                    style={[s.tabLabel, { opacity: labelOpacity }]}
-                    numberOfLines={1}
-                  >
-                    {tab.label}
-                  </Animated.Text>
-                </Animated.View>
+                  {tab.label}
+                </Animated.Text>
               </TouchableOpacity>
             );
           })}
@@ -150,25 +143,29 @@ const s = StyleSheet.create({
     shadowRadius:    12,
     elevation:       12,
   },
-  tabInner: {
-    flexDirection:  'row',
-    alignItems:     'center',
-    justifyContent: 'center',
-    borderRadius:   999,
-    gap:            6,
-    overflow:       'hidden',
-  },
   tabActive: {
-    backgroundColor: '#FFFFFF',
-    paddingHorizontal: 4,
+    flexDirection:     'row',
+    alignItems:        'center',
+    justifyContent:    'center',
+    gap:               7,
+    height:            ACTIVE_H,
+    paddingHorizontal: 16,
+    backgroundColor:   '#FFFFFF',
+    borderRadius:      999,
+    overflow:          'hidden',
   },
   tabInactive: {
-    backgroundColor: 'transparent',
+    width:             52,
+    height:            ACTIVE_H,
+    alignItems:        'center',
+    justifyContent:    'center',
+    backgroundColor:   'transparent',
   },
   tabLabel: {
     fontSize:   13,
     fontWeight: '700',
     color:      '#1C1C1E',
+    overflow:   'hidden',
   },
   actionBtn: {
     width:        BTN_SIZE,

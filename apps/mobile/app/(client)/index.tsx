@@ -87,7 +87,7 @@ function getStepIndex(state: string): number {
 const PB_STEP_DEFS = [
   { active: 'document-text',  inactive: 'document-text-outline'  },
   { active: 'person',         inactive: 'person-outline'         },
-  { active: 'bicycle',        inactive: 'bicycle-outline'        },
+  { active: 'hand-left',      inactive: 'hand-left-outline'      },
   { active: 'car',            inactive: 'car-outline'            },
   { active: 'home',           inactive: 'home-outline'           },
 ] as const;
@@ -111,18 +111,18 @@ function ProgressBar({ state, accent, labels }: { state: string; accent: string;
           return (
             <React.Fragment key={i}>
               {i > 0 && (
-                <View style={[pb.connector, done ? { backgroundColor: accent } : { backgroundColor: 'rgba(255,255,255,0.12)' }]} />
+                <View style={[pb.connector, done ? { backgroundColor: accent } : { backgroundColor: 'rgba(28,28,30,0.12)' }]} />
               )}
               <View style={[
                 pb.node,
                 done   && { backgroundColor: accent },
                 active && { backgroundColor: accent },
-                future && { backgroundColor: 'rgba(255,255,255,0.10)' },
+                future && { backgroundColor: 'rgba(28,28,30,0.08)' },
               ]}>
                 <Ionicons
                   name={((done || active) ? step.active : step.inactive) as any}
                   size={16}
-                  color={(done || active) ? '#1C1C1E' : 'rgba(255,255,255,0.30)'}
+                  color={(done || active) ? '#FFFFFF' : 'rgba(28,28,30,0.35)'}
                 />
               </View>
             </React.Fragment>
@@ -139,7 +139,7 @@ const pb = StyleSheet.create({
   pill: {
     flexDirection:     'row',
     alignItems:        'center',
-    backgroundColor:   '#1C1C1E',
+    backgroundColor:   'rgba(28,28,30,0.06)',
     borderRadius:      999,
     paddingVertical:   PB_PAD,
     paddingHorizontal: PB_PAD,

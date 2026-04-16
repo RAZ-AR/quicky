@@ -29,7 +29,7 @@ function getStepIndex(state: string): number {
 const STEP_DEFS = [
   { active: 'document-text',    inactive: 'document-text-outline'    },
   { active: 'person',           inactive: 'person-outline'           },
-  { active: 'bicycle',          inactive: 'bicycle-outline'          },
+  { active: 'hand-left',         inactive: 'hand-left-outline'        },
   { active: 'car',              inactive: 'car-outline'              },
   { active: 'home',             inactive: 'home-outline'             },
 ] as const;
@@ -62,7 +62,7 @@ function StatusStepBar({ state, accent, labels }: {
               {i > 0 && (
                 <View style={[
                   ssb.connector,
-                  (done) ? { backgroundColor: accent } : { backgroundColor: 'rgba(255,255,255,0.12)' },
+                  done ? { backgroundColor: accent } : { backgroundColor: 'rgba(28,28,30,0.12)' },
                 ]} />
               )}
 
@@ -70,13 +70,13 @@ function StatusStepBar({ state, accent, labels }: {
               <View style={[
                 ssb.node,
                 done   && { backgroundColor: accent },
-                active && { backgroundColor: accent, shadowColor: accent, shadowOpacity: 0.55, shadowRadius: 10, shadowOffset: { width: 0, height: 0 }, elevation: 8 },
-                future && { backgroundColor: 'rgba(255,255,255,0.10)' },
+                active && { backgroundColor: accent, shadowColor: accent, shadowOpacity: 0.40, shadowRadius: 8, shadowOffset: { width: 0, height: 2 }, elevation: 6 },
+                future && { backgroundColor: 'rgba(28,28,30,0.08)' },
               ]}>
                 <Ionicons
                   name={(done || active ? step.active : step.inactive) as any}
                   size={22}
-                  color={done || active ? '#1C1C1E' : 'rgba(255,255,255,0.30)'}
+                  color={done || active ? '#FFFFFF' : 'rgba(28,28,30,0.35)'}
                 />
               </View>
             </React.Fragment>
@@ -104,11 +104,11 @@ const ssb = StyleSheet.create({
   wrapper:     { paddingVertical: 4 },
   statusLabel: { fontSize: 18, fontWeight: '800', letterSpacing: -0.3, marginBottom: 14 },
 
-  // Dark pill container
+  // Light pill container (no dark bg)
   pill: {
     flexDirection:     'row',
     alignItems:        'center',
-    backgroundColor:   '#1C1C1E',
+    backgroundColor:   'rgba(28,28,30,0.06)',
     borderRadius:      999,
     paddingVertical:   PILL_PAD,
     paddingHorizontal: PILL_PAD,
