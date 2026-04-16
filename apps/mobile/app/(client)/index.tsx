@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity,
-  StyleSheet, StatusBar, Modal,
+  StyleSheet, StatusBar,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -9,14 +9,14 @@ import { Ionicons } from '@expo/vector-icons';
 import { useAuthStore } from '../../src/stores/authStore';
 import { useTaskStore } from '../../src/stores/taskStore';
 import {
-  RADIUS, SHADOW, CATEGORIES, TASK_STATE_LABELS,
+  RADIUS, SHADOW, CATEGORIES, TASK_STATE_LABELS, TASK_STATE_COLORS,
   type AppColors,
 } from '../../src/constants/config';
 import { useAppTheme } from '../../src/hooks/useAppTheme';
 import { useLang } from '../../src/hooks/useLang';
 import type { Lang } from '../../src/i18n/translations';
 
-// ── Mock test data ───────────────────────────────────────────────────────────
+// ── Mock data ─────────────────────────────────────────────────────────────────
 const MOCK_TASKS: any[] = [
   {
     id: 'mock-1',
@@ -24,7 +24,7 @@ const MOCK_TASKS: any[] = [
     item_description: 'Купить продукты: молоко, хлеб, яйца в Пятёрочке на Ленина',
     category: 'shopping',
     from_location: { address: 'Пятёрочка, ул. Ленина, 10' },
-    to_location:   { address: 'пр. Победы, 45, кв. 12' },
+    to_location: { address: 'пр. Победы, 45, кв. 12' },
     price_final: 450,
     payment_method: 'cash',
     created_at: new Date(Date.now() - 3600000).toISOString(),
@@ -37,7 +37,7 @@ const MOCK_TASKS: any[] = [
     item_description: 'Доставить посылку из СДЭК в офис',
     category: 'delivery',
     from_location: { address: 'СДЭК, ул. Садовая, 23' },
-    to_location:   { address: 'БЦ "Альфа", пр. Маркса, 1, 3 этаж' },
+    to_location: { address: 'БЦ Альфа, пр. Маркса, 1' },
     price_final: 600,
     payment_method: 'card',
     created_at: new Date(Date.now() - 86400000).toISOString(),
@@ -49,8 +49,8 @@ const MOCK_TASKS: any[] = [
     state: 'published',
     item_description: 'Забрать вещи из химчистки и отвезти домой',
     category: 'errand',
-    from_location: { address: 'Химчистка "Снежинка", ул. Попова, 7' },
-    to_location:   { address: 'ул. Гагарина, 100, кв. 5' },
+    from_location: { address: 'Химчистка Снежинка, ул. Попова, 7' },
+    to_location: { address: 'ул. Гагарина, 100, кв. 5' },
     price_final: 350,
     payment_method: 'cash',
     created_at: new Date(Date.now() - 1800000).toISOString(),
@@ -72,7 +72,7 @@ const MOCK_TASKS: any[] = [
   },
 ];
 
-// ── Order progress ───────────────────────────────────────────────────────────
+// ── Step index ────────────────────────────────────────────────────────────────
 function getStepIndex(state: string): number {
   const map: Record<string, number> = {
     draft: 0, pending_confirm: 0, published: 0,
@@ -84,85 +84,63 @@ function getStepIndex(state: string): number {
   return map[state] ?? 0;
 }
 
-const PB_STEP_DEFS = [
-  { active: 'document-text',  inactive: 'document-text-outline'  },
-  { active: 'person',         inactive: 'person-outline'         },
-  { active: 'hand-left',      inactive: 'hand-left-outline'      },
-  { active: 'car',            inactive: 'car-outline'            },
-  { active: 'home',           inactive: 'home-outline'           },
-] as const;
-
-const PB_NODE = 36;
-const PB_PAD  = 4;
-
-function ProgressBar({ state, accent, labels }: { state: string; accent: string; labels: string[] }) {
+// ── Inline step dots (inside colored hero card) ───────────────────────────────
+function StepDots({ state, darkText }: { state: string; darkText: string }) {
   const idx = getStepIndex(state);
+  const TOTAL = 5;
+  const DOT = 22;
   return (
-    <View style={pb.wrap}>
-      {/* Current step label */}
-      <Text style={[pb.label, { color: accent }]}>{labels[idx]}</Text>
-
-      {/* Compact dark pill */}
-      <View style={pb.pill}>
-        {PB_STEP_DEFS.map((step, i) => {
-          const done   = i < idx;
-          const active = i === idx;
-          const future = i > idx;
-          return (
-            <React.Fragment key={i}>
-              {i > 0 && (
-                <View style={[pb.connector, done ? { backgroundColor: accent } : { backgroundColor: 'rgba(28,28,30,0.12)' }]} />
+    <View style={dots.row}>
+      {Array.from({ length: TOTAL }).map((_, i) => {
+        const done   = i < idx;
+        const active = i === idx;
+        const future = i > idx;
+        return (
+          <React.Fragment key={i}>
+            {i > 0 && (
+              <View
+                style={[
+                  dots.line,
+                  { backgroundColor: done ? darkText : `${darkText}40` },
+                ]}
+              />
+            )}
+            <View
+              style={[
+                dots.dot,
+                { width: DOT, height: DOT, borderRadius: DOT / 2 },
+                done   && { backgroundColor: darkText },
+                active && { backgroundColor: darkText, opacity: 1 },
+                future && { backgroundColor: `${darkText}20`, borderWidth: 1.5, borderColor: `${darkText}50` },
+              ]}
+            >
+              {(done || active) && (
+                <View style={[dots.inner, { backgroundColor: future ? 'transparent' : 'rgba(255,255,255,0.35)' }]} />
               )}
-              <View style={[
-                pb.node,
-                done   && { backgroundColor: accent },
-                active && { backgroundColor: accent },
-                future && { backgroundColor: 'rgba(28,28,30,0.08)' },
-              ]}>
-                <Ionicons
-                  name={((done || active) ? step.active : step.inactive) as any}
-                  size={16}
-                  color={(done || active) ? '#FFFFFF' : 'rgba(28,28,30,0.35)'}
-                />
-              </View>
-            </React.Fragment>
-          );
-        })}
-      </View>
+            </View>
+          </React.Fragment>
+        );
+      })}
     </View>
   );
 }
 
-const pb = StyleSheet.create({
-  wrap:      { marginTop: 12 },
-  label:     { fontSize: 11, fontWeight: '700', letterSpacing: 0.3, marginBottom: 8 },
-  pill: {
-    flexDirection:     'row',
-    alignItems:        'center',
-    backgroundColor:   'rgba(28,28,30,0.06)',
-    borderRadius:      999,
-    paddingVertical:   PB_PAD,
-    paddingHorizontal: PB_PAD,
-  },
-  node: {
-    width:          PB_NODE,
-    height:         PB_NODE,
-    borderRadius:   PB_NODE / 2,
-    alignItems:     'center',
-    justifyContent: 'center',
-  },
-  connector: {
-    flex:         1,
-    height:       3,
-    borderRadius: 2,
-  },
+const dots = StyleSheet.create({
+  row: { flexDirection: 'row', alignItems: 'center', marginVertical: 14 },
+  line: { flex: 1, height: 3, borderRadius: 2 },
+  dot: { alignItems: 'center', justifyContent: 'center' },
+  inner: { width: 8, height: 8, borderRadius: 4 },
 });
 
-// ── Language selector ────────────────────────────────────────────────────────
-function LangSelector({ language, setLanguage, styles }: {
+// ── Language selector ─────────────────────────────────────────────────────────
+function LangSelector({
+  language,
+  setLanguage,
+  styles,
+}: {
   language: Lang;
   setLanguage: (l: Lang) => void;
-  styles: any;
+  styles: ReturnType<typeof makeStyles>;
 }) {
   const [open, setOpen] = useState(false);
   const options: { key: Lang; label: string }[] = [
@@ -172,7 +150,11 @@ function LangSelector({ language, setLanguage, styles }: {
   ];
   return (
     <View>
-      <TouchableOpacity style={styles.langBtn} onPress={() => setOpen(v => !v)} activeOpacity={0.7}>
+      <TouchableOpacity
+        style={styles.langBtn}
+        onPress={() => setOpen(v => !v)}
+        activeOpacity={0.7}
+      >
         <Text style={styles.langBtnText}>{language.toUpperCase()}</Text>
         <Text style={styles.langChevron}>{open ? '▲' : '▼'}</Text>
       </TouchableOpacity>
@@ -181,11 +163,19 @@ function LangSelector({ language, setLanguage, styles }: {
           {options.map(opt => (
             <TouchableOpacity
               key={opt.key}
-              style={[styles.langOption, opt.key === language && styles.langOptionActive]}
+              style={[
+                styles.langOption,
+                opt.key === language && styles.langOptionActive,
+              ]}
               onPress={() => { setLanguage(opt.key); setOpen(false); }}
               activeOpacity={0.7}
             >
-              <Text style={[styles.langOptionText, opt.key === language && styles.langOptionTextActive]}>
+              <Text
+                style={[
+                  styles.langOptionText,
+                  opt.key === language && styles.langOptionTextActive,
+                ]}
+              >
                 {opt.label}
               </Text>
             </TouchableOpacity>
@@ -196,41 +186,58 @@ function LangSelector({ language, setLanguage, styles }: {
   );
 }
 
+// ── Main screen ───────────────────────────────────────────────────────────────
 export default function ClientHomeScreen() {
-  const router  = useRouter();
-  const { user }                 = useAuthStore();
-  const { myTasks, loadMyTasks } = useTaskStore();
-  const { COLORS, isDark }       = useAppTheme();
+  const router = useRouter();
+  const { user }                     = useAuthStore();
+  const { myTasks, loadMyTasks }     = useTaskStore();
+  const { COLORS, isDark }           = useAppTheme();
   const { t, language, setLanguage } = useLang();
   const styles = useMemo(() => makeStyles(COLORS, isDark), [COLORS, isDark]);
 
   useEffect(() => { loadMyTasks(); }, []);
 
-  const greetHour = new Date().getHours();
-  const greeting  = greetHour < 12 ? t.goodMorning : greetHour < 18 ? t.goodAfternoon : t.goodEvening;
+  // Greeting
+  const hour     = new Date().getHours();
+  const greeting = hour < 12 ? t.goodMorning : hour < 18 ? t.goodAfternoon : t.goodEvening;
+  const firstName = (user?.name ?? 'Клиент').split(' ')[0];
 
-  // Use real data if available, otherwise mock
-  const tasks = myTasks.length > 0 ? myTasks : MOCK_TASKS;
+  // Data
+  const tasks      = myTasks.length > 0 ? myTasks : MOCK_TASKS;
+  const active     = tasks.filter((tk: any) =>
+    ['published', 'accepted', 'in_progress', 'pending_client'].includes(tk.state),
+  );
+  const completed  = tasks.filter((tk: any) =>
+    ['completed', 'rated'].includes(tk.state),
+  );
+  const history    = tasks.slice(0, 8);
+  const totalSpent = completed.reduce(
+    (sum: number, tk: any) => sum + (Number(tk.price_final) || 0), 0,
+  );
+  const activeTask = active[0] ?? null;
 
-  const active    = tasks.filter((t: any) => ['published','accepted','in_progress','pending_client'].includes(t.state));
-  const completed = tasks.filter((t: any) => ['completed','rated'].includes(t.state));
-  const recent    = tasks.slice(0, 8);
-  const totalSpent = completed.reduce((s: number, task: any) => s + (Number(task.price_final) || 0), 0);
-  const activeTask = active[0];
-
-  const stepLabels = [t.stepCreated, t.stepHasExecutor, t.stepTaken, t.stepEnRoute, t.stepDelivered];
+  const stepLabels = [
+    t.stepCreated,
+    t.stepHasExecutor,
+    t.stepTaken,
+    t.stepEnRoute,
+    t.stepDelivered,
+  ];
 
   return (
     <View style={styles.root}>
-      <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
+      <StatusBar barStyle="light-content" backgroundColor="#0F0F0F" />
       <SafeAreaView style={styles.safe} edges={['top']}>
-        <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+        <ScrollView
+          contentContainerStyle={styles.scroll}
+          showsVerticalScrollIndicator={false}
+        >
 
-          {/* HEADER */}
+          {/* ── Header ── */}
           <View style={styles.header}>
             <View style={{ flex: 1 }}>
-              <Text style={styles.greeting}>{greeting}</Text>
-              <Text style={styles.name}>{user?.name ?? 'Клиент'}</Text>
+              <Text style={styles.greeting}>{greeting},</Text>
+              <Text style={styles.name}>{firstName}</Text>
             </View>
             <LangSelector language={language} setLanguage={setLanguage} styles={styles} />
             <TouchableOpacity
@@ -238,126 +245,186 @@ export default function ClientHomeScreen() {
               onPress={() => router.push('/(client)/profile')}
               activeOpacity={0.8}
             >
-              <Text style={styles.avatarText}>{user?.name?.[0]?.toUpperCase() ?? '?'}</Text>
+              <Text style={styles.avatarText}>
+                {user?.name?.[0]?.toUpperCase() ?? '?'}
+              </Text>
             </TouchableOpacity>
           </View>
 
-          {/* STATS */}
+          {/* ── Stats bento row ── */}
           <View style={styles.statsRow}>
+            {/* Active */}
             <View style={styles.statCard}>
-              <Text style={[styles.statValue, { color: COLORS.primary }]}>{active.length}</Text>
-              <Text style={styles.statLabel}>{t.active}</Text>
-            </View>
-            <View style={styles.statDivider} />
-            <View style={styles.statCard}>
-              <Text style={styles.statValue}>{completed.length}</Text>
-              <Text style={styles.statLabel}>{t.completed}</Text>
-            </View>
-            <View style={styles.statDivider} />
-            <View style={styles.statCard}>
-              <Text style={styles.statValue}>
-                {totalSpent > 0 ? `${totalSpent.toLocaleString('ru')} ₽` : '—'}
+              <Text style={[styles.statValue, { color: '#FF8C5A' }]}>
+                {active.length}
               </Text>
-              <Text style={styles.statLabel}>{t.spent}</Text>
+              <Text style={styles.statLabel}>{t.active.toUpperCase()}</Text>
+            </View>
+            <View style={styles.statDivider} />
+            {/* Completed */}
+            <View style={styles.statCard}>
+              <Text style={[styles.statValue, { color: '#A8F0B0' }]}>
+                {completed.length}
+              </Text>
+              <Text style={styles.statLabel}>{t.completed.toUpperCase()}</Text>
+            </View>
+            <View style={styles.statDivider} />
+            {/* Spent */}
+            <View style={styles.statCard}>
+              <Text style={[styles.statValue, { color: '#FFFFFF' }]}>
+                {totalSpent > 0 ? `${totalSpent.toLocaleString('ru')}₽` : '—'}
+              </Text>
+              <Text style={styles.statLabel}>{t.spent.toUpperCase()}</Text>
             </View>
           </View>
 
-          {/* ACTIVE ORDER */}
-          {activeTask ? (
-            <View style={styles.section}>
-              <View style={styles.sectionHeader}>
-                <Text style={styles.sectionTitle}>{t.activeOrder}</Text>
-                {active.length > 1 && (
-                  <TouchableOpacity onPress={() => router.push('/(client)/tasks/')}>
-                    <Text style={styles.seeAll}>{t.allOrders.replace('→', '')} {active.length} →</Text>
-                  </TouchableOpacity>
-                )}
-              </View>
-              <TouchableOpacity
-                style={styles.activeCard}
-                onPress={() => router.push({ pathname: '/(client)/tasks/[id]', params: { id: activeTask.id } })}
-                activeOpacity={0.85}
-              >
-                <View style={styles.activeTop}>
-                  <View style={[styles.catBadge, { backgroundColor: COLORS.primaryGlow }]}>
-                    <Text style={[styles.catBadgeText, { color: COLORS.primary }]}>
-                      {CATEGORIES.find(c => c.key === activeTask.category)?.label ?? 'Заказ'}
-                    </Text>
-                  </View>
-                  <View style={[styles.statusBadge, { backgroundColor: COLORS.primaryGlow }]}>
-                    <View style={[styles.statusDot, { backgroundColor: COLORS.primary }]} />
-                    <Text style={[styles.statusText, { color: COLORS.primary }]}>
-                      {stepLabels[getStepIndex(activeTask.state)]}
-                    </Text>
-                  </View>
-                </View>
-                <Text style={styles.activeTitle} numberOfLines={2}>
-                  {activeTask.item_description ?? 'Заказ'}
+          {/* ── Active order section ── */}
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>{t.activeOrder}</Text>
+            {active.length > 1 && (
+              <TouchableOpacity onPress={() => router.push('/(client)/tasks/')}>
+                <Text style={styles.seeAll}>
+                  {t.allOrders.replace('→', '').trim()} {active.length} →
                 </Text>
-                {activeTask.to_location?.address && (
-                  <Text style={styles.activeAddr} numberOfLines={1}>
-                    {activeTask.to_location.address}
-                  </Text>
-                )}
-                <ProgressBar state={activeTask.state} accent={COLORS.primary} labels={stepLabels} />
-                <View style={styles.activeFooter}>
-                  {activeTask.price_final ? (
-                    <Text style={styles.activePrice}>{activeTask.price_final} ₽</Text>
-                  ) : <View />}
-                  <Text style={[styles.openLink, { color: COLORS.primary }]}>
-                    {t.orderDetails} →
-                  </Text>
-                </View>
               </TouchableOpacity>
-            </View>
+            )}
+          </View>
+
+          {activeTask ? (
+            (() => {
+              const cat      = CATEGORIES.find(c => c.key === activeTask.category);
+              const cardBg   = cat?.dark   ?? '#F5C4A0';
+              const textCol  = cat?.darkText ?? '#2A1000';
+              const stepIdx  = getStepIndex(activeTask.state);
+              const statLabel = TASK_STATE_LABELS[activeTask.state] ?? stepLabels[stepIdx];
+
+              return (
+                <TouchableOpacity
+                  style={[styles.heroCard, { backgroundColor: cardBg }]}
+                  onPress={() => router.push({
+                    pathname: '/(client)/tasks/[id]',
+                    params: { id: activeTask.id },
+                  })}
+                  activeOpacity={0.88}
+                >
+                  {/* Top pills */}
+                  <View style={styles.heroTop}>
+                    <View style={[styles.heroPill, { backgroundColor: `${textCol}20` }]}>
+                      <Ionicons
+                        name={(cat?.icon ?? 'list-outline') as any}
+                        size={12}
+                        color={textCol}
+                        style={{ marginRight: 5 }}
+                      />
+                      <Text style={[styles.heroPillText, { color: textCol }]}>
+                        {cat?.label ?? 'Заказ'}
+                      </Text>
+                    </View>
+                    <View style={[styles.heroPill, { backgroundColor: `${textCol}20` }]}>
+                      <View style={[styles.heroStatusDot, { backgroundColor: textCol }]} />
+                      <Text style={[styles.heroPillText, { color: textCol }]}>
+                        {statLabel}
+                      </Text>
+                    </View>
+                  </View>
+
+                  {/* Title */}
+                  <Text
+                    style={[styles.heroTitle, { color: textCol }]}
+                    numberOfLines={2}
+                  >
+                    {activeTask.item_description ?? 'Заказ'}
+                  </Text>
+
+                  {/* Address */}
+                  {activeTask.to_location?.address ? (
+                    <View style={styles.heroAddrRow}>
+                      <Ionicons
+                        name="location-outline"
+                        size={13}
+                        color={`${textCol}A0`}
+                        style={{ marginRight: 4 }}
+                      />
+                      <Text
+                        style={[styles.heroAddr, { color: `${textCol}A0` }]}
+                        numberOfLines={1}
+                      >
+                        {activeTask.to_location.address}
+                      </Text>
+                    </View>
+                  ) : null}
+
+                  {/* Step dots progress */}
+                  <StepDots state={activeTask.state} darkText={textCol} />
+
+                  {/* Footer: price + details link */}
+                  <View style={styles.heroFooter}>
+                    <Text style={[styles.heroPrice, { color: textCol }]}>
+                      {activeTask.price_final ? `${activeTask.price_final} ₽` : '—'}
+                    </Text>
+                    <Text style={[styles.heroDetails, { color: textCol }]}>
+                      {t.orderDetails} →
+                    </Text>
+                  </View>
+                </TouchableOpacity>
+              );
+            })()
           ) : (
+            /* Empty state */
             <TouchableOpacity
-              style={styles.emptyActiveCard}
+              style={styles.emptyCard}
               onPress={() => router.push('/(client)/create')}
               activeOpacity={0.85}
             >
-              <View style={[styles.emptyIconCircle, { backgroundColor: COLORS.primaryGlow }]}>
-                <Text style={[styles.emptyIcon, { color: COLORS.primary }]}>+</Text>
+              <View style={styles.emptyIconWrap}>
+                <Text style={styles.emptyPlus}>+</Text>
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={styles.emptyTitle}>{t.noActiveOrders}</Text>
                 <Text style={styles.emptySub}>{t.tapToCreate}</Text>
               </View>
-              <Text style={[styles.openLink, { color: COLORS.primary }]}>→</Text>
+              <Text style={styles.emptyArrow}>→</Text>
             </TouchableOpacity>
           )}
 
-          {/* HISTORY */}
-          {recent.length > 0 && (
-            <View style={styles.section}>
+          {/* ── History section ── */}
+          {history.length > 0 && (
+            <View style={{ marginTop: 32 }}>
               <View style={styles.sectionHeader}>
                 <Text style={styles.sectionTitle}>{t.history}</Text>
                 <TouchableOpacity onPress={() => router.push('/(client)/tasks/')}>
                   <Text style={styles.seeAll}>{t.allOrders}</Text>
                 </TouchableOpacity>
               </View>
-              {recent.map((task: any) => {
-                const cat = CATEGORIES.find(c => c.key === task.category);
-                const isActive = ['published','accepted','in_progress','pending_client'].includes(task.state);
-                const stepIdx  = getStepIndex(task.state);
+
+              {history.map((task: any) => {
+                const cat        = CATEGORIES.find(c => c.key === task.category);
+                const borderCol  = cat?.dark ?? '#E0E0E0';
+                const stateColor = TASK_STATE_COLORS[task.state] ?? '#8E8E93';
+                const stateLabel = TASK_STATE_LABELS[task.state] ?? task.state;
+
                 return (
                   <TouchableOpacity
                     key={task.id}
-                    style={styles.historyCard}
-                    onPress={() => router.push({ pathname: '/(client)/tasks/[id]', params: { id: task.id } })}
+                    style={[styles.histCard, { borderLeftColor: borderCol }]}
+                    onPress={() => router.push({
+                      pathname: '/(client)/tasks/[id]',
+                      params: { id: task.id },
+                    })}
                     activeOpacity={0.8}
                   >
-                    <View style={[styles.historyDot, { backgroundColor: cat?.color ?? COLORS.bgElevated }]} />
-                    <View style={styles.historyContent}>
-                      <Text style={styles.historyTitle} numberOfLines={1}>{task.item_description ?? 'Заказ'}</Text>
-                      <Text style={styles.historyMeta}>
+                    <View style={styles.histContent}>
+                      <Text style={styles.histTitle} numberOfLines={1}>
+                        {task.item_description ?? 'Заказ'}
+                      </Text>
+                      <Text style={styles.histMeta}>
                         {cat?.label ?? 'Заказ'}
                         {task.price_final ? ` · ${task.price_final} ₽` : ''}
                       </Text>
                     </View>
-                    <View style={[styles.historyStatus, { backgroundColor: isActive ? COLORS.primaryGlow : COLORS.bgElevated }]}>
-                      <Text style={[styles.historyStatusText, { color: isActive ? COLORS.primary : COLORS.textMuted }]}>
-                        {stepLabels[stepIdx]}
+                    <View style={[styles.histBadge, { backgroundColor: `${stateColor}22` }]}>
+                      <Text style={[styles.histBadgeText, { color: stateColor }]}>
+                        {stateLabel}
                       </Text>
                     </View>
                   </TouchableOpacity>
@@ -373,69 +440,204 @@ export default function ClientHomeScreen() {
   );
 }
 
+// ── Styles ────────────────────────────────────────────────────────────────────
 function makeStyles(C: AppColors, isDark: boolean, R = RADIUS) {
   return StyleSheet.create({
-    root:   { flex: 1, backgroundColor: C.bg },
+    root:   { flex: 1, backgroundColor: '#0F0F0F' },
     safe:   { flex: 1 },
     scroll: { paddingHorizontal: 20, paddingTop: 8 },
 
-    header:    { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 24 },
-    greeting:  { fontSize: 12, color: C.textMuted, fontWeight: '500', marginBottom: 1 },
-    name:      { fontSize: 26, fontWeight: '800', color: C.text, letterSpacing: -0.5 },
-    avatarBtn: { width: 42, height: 42, borderRadius: 21, backgroundColor: C.primary, alignItems: 'center', justifyContent: 'center' },
-    avatarText:{ color: '#FFFFFF', fontWeight: '800', fontSize: 16 },
+    // Header
+    header: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 10,
+      marginBottom: 24,
+    },
+    greeting: {
+      fontSize: 13,
+      fontWeight: '500',
+      color: 'rgba(255,255,255,0.45)',
+      marginBottom: 2,
+    },
+    name: {
+      fontSize: 32,
+      fontWeight: '800',
+      color: '#FFFFFF',
+      letterSpacing: -0.8,
+    },
+    avatarBtn: {
+      width: 44,
+      height: 44,
+      borderRadius: 22,
+      backgroundColor: '#FF8C5A',
+      alignItems: 'center',
+      justifyContent: 'center',
+      ...SHADOW.orange,
+    },
+    avatarText: {
+      color: '#FFFFFF',
+      fontWeight: '800',
+      fontSize: 17,
+    },
 
-    // Language selector
-    langBtn:         { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: C.bgLayer, borderRadius: R.full, paddingHorizontal: 10, paddingVertical: 7, borderWidth: 1, borderColor: C.border },
-    langBtnText:     { fontSize: 12, fontWeight: '700', color: C.text },
-    langChevron:     { fontSize: 8, color: C.textMuted },
-    langDropdown:    { position: 'absolute', top: 42, right: 0, backgroundColor: C.bgLayer, borderRadius: R.lg, borderWidth: 1, borderColor: C.border, zIndex: 999, overflow: 'hidden', ...SHADOW.md },
-    langOption:      { paddingHorizontal: 16, paddingVertical: 10 },
-    langOptionActive:{ backgroundColor: C.primaryGlow },
-    langOptionText:  { fontSize: 13, fontWeight: '600', color: C.textMuted },
-    langOptionTextActive: { color: C.primary, fontWeight: '700' },
+    // Lang selector
+    langBtn: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 4,
+      backgroundColor: '#1A1A1A',
+      borderRadius: R.full,
+      paddingHorizontal: 12,
+      paddingVertical: 8,
+      borderWidth: 1,
+      borderColor: 'rgba(255,255,255,0.08)',
+    },
+    langBtnText: { fontSize: 12, fontWeight: '700', color: '#FFFFFF' },
+    langChevron: { fontSize: 8, color: 'rgba(255,255,255,0.45)' },
+    langDropdown: {
+      position: 'absolute',
+      top: 44,
+      right: 0,
+      backgroundColor: '#1A1A1A',
+      borderRadius: R.lg,
+      borderWidth: 1,
+      borderColor: 'rgba(255,255,255,0.08)',
+      zIndex: 999,
+      overflow: 'hidden',
+      ...SHADOW.md,
+    },
+    langOption: { paddingHorizontal: 18, paddingVertical: 11 },
+    langOptionActive: { backgroundColor: 'rgba(255,140,90,0.18)' },
+    langOptionText: {
+      fontSize: 13,
+      fontWeight: '600',
+      color: 'rgba(255,255,255,0.45)',
+    },
+    langOptionTextActive: { color: '#FF8C5A', fontWeight: '700' },
 
-    // Stats
-    statsRow:    { flexDirection: 'row', alignItems: 'center', backgroundColor: C.bgLayer, borderRadius: R.xl, paddingVertical: 16, paddingHorizontal: 20, marginBottom: 28, ...SHADOW.sm },
+    // Stats bento
+    statsRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: '#1A1A1A',
+      borderRadius: R.xl,
+      paddingVertical: 18,
+      paddingHorizontal: 20,
+      marginBottom: 32,
+      borderWidth: 1,
+      borderColor: 'rgba(255,255,255,0.06)',
+      ...SHADOW.md,
+    },
     statCard:    { flex: 1, alignItems: 'center' },
-    statValue:   { fontSize: 20, fontWeight: '800', color: C.text, marginBottom: 2 },
-    statLabel:   { fontSize: 11, color: C.textMuted, fontWeight: '500' },
-    statDivider: { width: 1, height: 32, backgroundColor: C.border },
+    statValue:   { fontSize: 22, fontWeight: '700', marginBottom: 4 },
+    statLabel:   { fontSize: 9, color: 'rgba(255,255,255,0.45)', fontWeight: '600', letterSpacing: 0.5 },
+    statDivider: { width: 1, height: 36, backgroundColor: 'rgba(255,255,255,0.06)' },
 
-    // Sections
-    section:       { marginBottom: 28 },
-    sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 },
-    sectionTitle:  { fontSize: 18, fontWeight: '800', color: C.text, letterSpacing: -0.3 },
-    seeAll:        { fontSize: 14, color: C.primary, fontWeight: '600' },
+    // Section header
+    sectionHeader: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: 14,
+    },
+    sectionTitle: {
+      fontSize: 18,
+      fontWeight: '800',
+      color: '#FFFFFF',
+      letterSpacing: -0.3,
+    },
+    seeAll: { fontSize: 14, color: '#FF8C5A', fontWeight: '600' },
 
-    // Active order card
-    activeCard:    { backgroundColor: C.bgLayer, borderRadius: R.xxl, padding: 20, ...SHADOW.md },
-    activeTop:     { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 },
-    catBadge:      { borderRadius: R.full, paddingHorizontal: 10, paddingVertical: 5 },
-    catBadgeText:  { fontSize: 12, fontWeight: '700' },
-    statusBadge:   { flexDirection: 'row', alignItems: 'center', borderRadius: R.full, paddingHorizontal: 10, paddingVertical: 5, gap: 5 },
-    statusDot:     { width: 6, height: 6, borderRadius: 3 },
-    statusText:    { fontSize: 11, fontWeight: '700' },
-    activeTitle:   { fontSize: 18, fontWeight: '800', color: C.text, letterSpacing: -0.3, marginBottom: 6 },
-    activeAddr:    { fontSize: 13, color: C.textMuted, marginBottom: 2 },
-    activeFooter:  { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 16 },
-    activePrice:   { fontSize: 24, fontWeight: '800', color: C.text },
-    openLink:      { fontSize: 13, fontWeight: '600' },
+    // Hero (active task) card
+    heroCard: {
+      borderRadius: 20,
+      padding: 18,
+      ...SHADOW.lg,
+    },
+    heroTop: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: 14,
+    },
+    heroPill: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      borderRadius: R.full,
+      paddingHorizontal: 10,
+      paddingVertical: 5,
+    },
+    heroPillText: { fontSize: 12, fontWeight: '700' },
+    heroStatusDot: {
+      width: 6,
+      height: 6,
+      borderRadius: 3,
+      marginRight: 5,
+    },
+    heroTitle: {
+      fontSize: 17,
+      fontWeight: '700',
+      lineHeight: 23,
+      marginBottom: 6,
+    },
+    heroAddrRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+    },
+    heroAddr: { fontSize: 13, flex: 1 },
+    heroFooter: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+    },
+    heroPrice: { fontSize: 22, fontWeight: '800' },
+    heroDetails: { fontSize: 13, fontWeight: '600' },
 
-    // Empty state
-    emptyActiveCard: { backgroundColor: C.bgLayer, borderRadius: R.xxl, padding: 20, flexDirection: 'row', alignItems: 'center', gap: 14, borderWidth: 1, borderColor: C.border, borderStyle: 'dashed' },
-    emptyIconCircle: { width: 42, height: 42, borderRadius: 21, alignItems: 'center', justifyContent: 'center' },
-    emptyIcon:       { fontSize: 22, fontWeight: '300' },
-    emptyTitle:      { fontSize: 15, fontWeight: '700', color: C.text, marginBottom: 2 },
-    emptySub:        { fontSize: 12, color: C.textMuted },
+    // Empty state card
+    emptyCard: {
+      backgroundColor: '#1A1A1A',
+      borderRadius: R.xxl,
+      padding: 20,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 14,
+      borderWidth: 1,
+      borderColor: 'rgba(255,255,255,0.08)',
+      borderStyle: 'dashed',
+    },
+    emptyIconWrap: {
+      width: 44,
+      height: 44,
+      borderRadius: 22,
+      backgroundColor: 'rgba(255,140,90,0.18)',
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    emptyPlus:  { fontSize: 24, color: '#FF8C5A', fontWeight: '300' },
+    emptyTitle: { fontSize: 15, fontWeight: '700', color: '#FFFFFF', marginBottom: 2 },
+    emptySub:   { fontSize: 12, color: 'rgba(255,255,255,0.45)' },
+    emptyArrow: { fontSize: 18, color: '#FF8C5A', fontWeight: '600' },
 
-    // History
-    historyCard:       { backgroundColor: C.bgLayer, borderRadius: R.xl, flexDirection: 'row', alignItems: 'center', paddingVertical: 14, paddingHorizontal: 16, marginBottom: 8, gap: 12 },
-    historyDot:        { width: 10, height: 10, borderRadius: 5 },
-    historyContent:    { flex: 1 },
-    historyTitle:      { fontSize: 14, fontWeight: '600', color: C.text, marginBottom: 3 },
-    historyMeta:       { fontSize: 12, color: C.textMuted },
-    historyStatus:     { borderRadius: R.full, paddingHorizontal: 10, paddingVertical: 4 },
-    historyStatusText: { fontSize: 11, fontWeight: '600' },
+    // History cards
+    histCard: {
+      backgroundColor: '#1A1A1A',
+      borderRadius: 16,
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingVertical: 14,
+      paddingHorizontal: 16,
+      marginBottom: 8,
+      borderLeftWidth: 4,
+      borderLeftColor: '#E0E0E0',
+      borderWidth: 1,
+      borderColor: 'rgba(255,255,255,0.05)',
+      overflow: 'hidden',
+    },
+    histContent:   { flex: 1, marginRight: 10 },
+    histTitle:     { fontSize: 14, fontWeight: '600', color: '#FFFFFF', marginBottom: 3 },
+    histMeta:      { fontSize: 12, color: 'rgba(255,255,255,0.45)' },
+    histBadge:     { borderRadius: R.full, paddingHorizontal: 10, paddingVertical: 4 },
+    histBadgeText: { fontSize: 11, fontWeight: '600' },
   });
 }
