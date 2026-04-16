@@ -12,7 +12,7 @@ interface ThemeStore {
 export const useThemeStore = create<ThemeStore>()(
   persist(
     (set) => ({
-      preference: 'dark',
+      preference: 'light',
       setPreference: (preference) => set({ preference }),
     }),
     {

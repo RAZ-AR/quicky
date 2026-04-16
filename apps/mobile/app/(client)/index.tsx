@@ -226,7 +226,7 @@ export default function ClientHomeScreen() {
 
   return (
     <View style={styles.root}>
-      <StatusBar barStyle="light-content" backgroundColor="#0F0F0F" />
+      <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
       <SafeAreaView style={styles.safe} edges={['top']}>
         <ScrollView
           contentContainerStyle={styles.scroll}
@@ -443,7 +443,7 @@ export default function ClientHomeScreen() {
 // ── Styles ────────────────────────────────────────────────────────────────────
 function makeStyles(C: AppColors, isDark: boolean, R = RADIUS) {
   return StyleSheet.create({
-    root:   { flex: 1, backgroundColor: '#0F0F0F' },
+    root:   { flex: 1, backgroundColor: C.bg },
     safe:   { flex: 1 },
     scroll: { paddingHorizontal: 20, paddingTop: 8 },
 
@@ -457,20 +457,20 @@ function makeStyles(C: AppColors, isDark: boolean, R = RADIUS) {
     greeting: {
       fontSize: 13,
       fontWeight: '500',
-      color: 'rgba(255,255,255,0.45)',
+      color: C.textMuted,
       marginBottom: 2,
     },
     name: {
       fontSize: 32,
       fontWeight: '800',
-      color: '#FFFFFF',
+      color: C.text,
       letterSpacing: -0.8,
     },
     avatarBtn: {
       width: 44,
       height: 44,
       borderRadius: 22,
-      backgroundColor: '#FF8C5A',
+      backgroundColor: C.primary,
       alignItems: 'center',
       justifyContent: 'center',
       ...SHADOW.orange,
@@ -486,53 +486,53 @@ function makeStyles(C: AppColors, isDark: boolean, R = RADIUS) {
       flexDirection: 'row',
       alignItems: 'center',
       gap: 4,
-      backgroundColor: '#1A1A1A',
+      backgroundColor: C.bgLayer,
       borderRadius: R.full,
       paddingHorizontal: 12,
       paddingVertical: 8,
       borderWidth: 1,
-      borderColor: 'rgba(255,255,255,0.08)',
+      borderColor: C.border,
     },
-    langBtnText: { fontSize: 12, fontWeight: '700', color: '#FFFFFF' },
-    langChevron: { fontSize: 8, color: 'rgba(255,255,255,0.45)' },
+    langBtnText: { fontSize: 12, fontWeight: '700', color: C.text },
+    langChevron: { fontSize: 8, color: C.textMuted },
     langDropdown: {
       position: 'absolute',
       top: 44,
       right: 0,
-      backgroundColor: '#1A1A1A',
+      backgroundColor: C.bgLayer,
       borderRadius: R.lg,
       borderWidth: 1,
-      borderColor: 'rgba(255,255,255,0.08)',
+      borderColor: C.border,
       zIndex: 999,
       overflow: 'hidden',
       ...SHADOW.md,
     },
     langOption: { paddingHorizontal: 18, paddingVertical: 11 },
-    langOptionActive: { backgroundColor: 'rgba(255,140,90,0.18)' },
+    langOptionActive: { backgroundColor: C.primaryGlow },
     langOptionText: {
       fontSize: 13,
       fontWeight: '600',
-      color: 'rgba(255,255,255,0.45)',
+      color: C.textMuted,
     },
-    langOptionTextActive: { color: '#FF8C5A', fontWeight: '700' },
+    langOptionTextActive: { color: C.primary, fontWeight: '700' },
 
     // Stats bento
     statsRow: {
       flexDirection: 'row',
       alignItems: 'center',
-      backgroundColor: '#1A1A1A',
+      backgroundColor: C.bgLayer,
       borderRadius: R.xl,
       paddingVertical: 18,
       paddingHorizontal: 20,
       marginBottom: 32,
       borderWidth: 1,
-      borderColor: 'rgba(255,255,255,0.06)',
-      ...SHADOW.md,
+      borderColor: C.divider,
+      ...SHADOW.sm,
     },
     statCard:    { flex: 1, alignItems: 'center' },
     statValue:   { fontSize: 22, fontWeight: '700', marginBottom: 4 },
-    statLabel:   { fontSize: 9, color: 'rgba(255,255,255,0.45)', fontWeight: '600', letterSpacing: 0.5 },
-    statDivider: { width: 1, height: 36, backgroundColor: 'rgba(255,255,255,0.06)' },
+    statLabel:   { fontSize: 9, color: C.textMuted, fontWeight: '600', letterSpacing: 0.5 },
+    statDivider: { width: 1, height: 36, backgroundColor: C.divider },
 
     // Section header
     sectionHeader: {
@@ -544,10 +544,10 @@ function makeStyles(C: AppColors, isDark: boolean, R = RADIUS) {
     sectionTitle: {
       fontSize: 18,
       fontWeight: '800',
-      color: '#FFFFFF',
+      color: C.text,
       letterSpacing: -0.3,
     },
-    seeAll: { fontSize: 14, color: '#FF8C5A', fontWeight: '600' },
+    seeAll: { fontSize: 14, color: C.primary, fontWeight: '600' },
 
     // Hero (active task) card
     heroCard: {
@@ -596,32 +596,32 @@ function makeStyles(C: AppColors, isDark: boolean, R = RADIUS) {
 
     // Empty state card
     emptyCard: {
-      backgroundColor: '#1A1A1A',
+      backgroundColor: C.bgLayer,
       borderRadius: R.xxl,
       padding: 20,
       flexDirection: 'row',
       alignItems: 'center',
       gap: 14,
       borderWidth: 1,
-      borderColor: 'rgba(255,255,255,0.08)',
+      borderColor: C.border,
       borderStyle: 'dashed',
     },
     emptyIconWrap: {
       width: 44,
       height: 44,
       borderRadius: 22,
-      backgroundColor: 'rgba(255,140,90,0.18)',
+      backgroundColor: C.primaryGlow,
       alignItems: 'center',
       justifyContent: 'center',
     },
-    emptyPlus:  { fontSize: 24, color: '#FF8C5A', fontWeight: '300' },
-    emptyTitle: { fontSize: 15, fontWeight: '700', color: '#FFFFFF', marginBottom: 2 },
-    emptySub:   { fontSize: 12, color: 'rgba(255,255,255,0.45)' },
-    emptyArrow: { fontSize: 18, color: '#FF8C5A', fontWeight: '600' },
+    emptyPlus:  { fontSize: 24, color: C.primary, fontWeight: '300' },
+    emptyTitle: { fontSize: 15, fontWeight: '700', color: C.text, marginBottom: 2 },
+    emptySub:   { fontSize: 12, color: C.textMuted },
+    emptyArrow: { fontSize: 18, color: C.primary, fontWeight: '600' },
 
     // History cards
     histCard: {
-      backgroundColor: '#1A1A1A',
+      backgroundColor: C.bgLayer,
       borderRadius: 16,
       flexDirection: 'row',
       alignItems: 'center',
@@ -629,14 +629,13 @@ function makeStyles(C: AppColors, isDark: boolean, R = RADIUS) {
       paddingHorizontal: 16,
       marginBottom: 8,
       borderLeftWidth: 4,
-      borderLeftColor: '#E0E0E0',
-      borderWidth: 1,
-      borderColor: 'rgba(255,255,255,0.05)',
+      borderLeftColor: C.border,
       overflow: 'hidden',
+      ...SHADOW.sm,
     },
     histContent:   { flex: 1, marginRight: 10 },
-    histTitle:     { fontSize: 14, fontWeight: '600', color: '#FFFFFF', marginBottom: 3 },
-    histMeta:      { fontSize: 12, color: 'rgba(255,255,255,0.45)' },
+    histTitle:     { fontSize: 14, fontWeight: '600', color: C.text, marginBottom: 3 },
+    histMeta:      { fontSize: 12, color: C.textMuted },
     histBadge:     { borderRadius: R.full, paddingHorizontal: 10, paddingVertical: 4 },
     histBadgeText: { fontSize: 11, fontWeight: '600' },
   });

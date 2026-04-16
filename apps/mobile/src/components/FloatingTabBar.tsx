@@ -134,7 +134,7 @@ const s = StyleSheet.create({
     alignItems:      'center',
     justifyContent:  'space-evenly',
     paddingHorizontal: 6,
-    backgroundColor: '#1A1A1A',
+    backgroundColor: '#1C1C1E',
     borderRadius:    999,
     // subtle shadow
     shadowColor:     '#000',

@@ -63,9 +63,9 @@ function formatDate(iso: string) {
 }
 
 // ─── Task Card ────────────────────────────────────────────────────────────────
-function TaskCard({ item, onPress }: { item: Task | typeof MOCK_TASKS[number]; onPress: () => void }) {
+function TaskCard({ item, onPress, styles, COLORS }: { item: Task | typeof MOCK_TASKS[number]; onPress: () => void; styles: any; COLORS: any }) {
   const cat = getCatMeta((item as any).category);
-  const stateColor = TASK_STATE_COLORS[(item as any).state] ?? 'rgba(255,255,255,0.45)';
+  const stateColor = TASK_STATE_COLORS[(item as any).state] ?? COLORS.textMuted;
   const stateLabel = TASK_STATE_LABELS[(item as any).state] ?? (item as any).state;
   const accentColor = cat.dark as string;
   const chipBg = accentColor + '22';
@@ -105,7 +105,7 @@ function TaskCard({ item, onPress }: { item: Task | typeof MOCK_TASKS[number]; o
         {/* Address row */}
         {(item as any).to_location?.address ? (
           <View style={styles.addrRow}>
-            <Ionicons name="location-outline" size={11} color="rgba(255,255,255,0.25)" />
+            <Ionicons name="location-outline" size={11} color={COLORS.textLight} />
             <Text style={styles.addrText} numberOfLines={1}>
               {(item as any).to_location.address}
             </Text>
@@ -125,6 +125,8 @@ function TaskCard({ item, onPress }: { item: Task | typeof MOCK_TASKS[number]; o
 export default function ClientTasksTab() {
   const router = useRouter();
   const { myTasks, isLoading, loadMyTasks } = useTaskStore();
+  const { COLORS, isDark } = useAppTheme();
+  const styles = useMemo(() => makeStyles(COLORS), [COLORS]);
 
   useEffect(() => { loadMyTasks(); }, []);
 
@@ -133,7 +135,7 @@ export default function ClientTasksTab() {
   const isMock = myTasks.length === 0;
 
   const handleCardPress = (id: string) => {
-    if (isMock) return; // mock cards are non-navigable
+    if (isMock) return;
     router.push({ pathname: '/(client)/tasks/[id]', params: { id } });
   };
 
@@ -141,12 +143,14 @@ export default function ClientTasksTab() {
     <TaskCard
       item={item as any}
       onPress={() => handleCardPress(item.id)}
+      styles={styles}
+      COLORS={COLORS}
     />
   );
 
   return (
     <View style={styles.root}>
-      <StatusBar barStyle="light-content" />
+      <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
 
       <SafeAreaView style={styles.safe} edges={['top']}>
         {/* Header */}
@@ -162,7 +166,7 @@ export default function ClientTasksTab() {
         </View>
 
         {isLoading && myTasks.length === 0 ? (
-          <ActivityIndicator size="large" color="#FF8C5A" style={{ marginTop: 60 }} />
+          <ActivityIndicator size="large" color={COLORS.primary} style={{ marginTop: 60 }} />
         ) : (
           <FlatList
             data={displayTasks as any[]}
@@ -177,7 +181,7 @@ export default function ClientTasksTab() {
               <RefreshControl
                 refreshing={isLoading}
                 onRefresh={loadMyTasks}
-                tintColor="#FF8C5A"
+                tintColor={COLORS.primary}
               />
             }
             ListHeaderComponent={
@@ -209,19 +213,8 @@ export default function ClientTasksTab() {
 }
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
-const C = {
-  bg:          '#0F0F0F',
-  bgLayer:     '#1A1A1A',
-  bgElevated:  '#242424',
-  text:        '#FFFFFF',
-  textMuted:   'rgba(255,255,255,0.45)',
-  textLight:   'rgba(255,255,255,0.25)',
-  primary:     '#FF8C5A',
-  border:      'rgba(255,255,255,0.08)',
-  divider:     'rgba(255,255,255,0.06)',
-};
-
-const styles = StyleSheet.create({
+function makeStyles(C: typeof import('../../src/constants/config').DARK_COLORS) {
+  return StyleSheet.create({
   root:  { flex: 1, backgroundColor: C.bg },
   safe:  { flex: 1 },
 
@@ -262,7 +255,7 @@ const styles = StyleSheet.create({
   },
   mockBannerText: {
     fontSize: 12,
-    color: 'rgba(255,255,255,0.35)',
+    color: C.textLight,
   },
 
   // ── Card ──
@@ -358,4 +351,5 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     fontSize: 15,
   },
-});
+  });
+}
