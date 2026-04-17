@@ -1,13 +1,12 @@
 /**
- * GradBtn — executor gradient button (blue → light-green)
- * Replaces solid COLORS.executor backgrounds on action buttons.
+ * GradBtn — Quicky dark pill action button
+ * Dark ink background (#0E0E10) with acid yellow (#D6F24A) text.
  */
-import { TouchableOpacity, Text, StyleSheet, ViewStyle, TextStyle } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
+import { TouchableOpacity, Text, StyleSheet, ViewStyle, TextStyle, View } from 'react-native';
 
-// ── Gradient palette ──────────────────────────────────────────────────────────
-export const EXEC_GRAD  = ['#45BFFF', '#5DEBAA'] as const;  // blue → mint
-export const EXEC_GRAD_DARK = ['#60C8FF', '#78F0C0'] as const; // brighter for dark mode
+// Kept for backward compat with profile.tsx imports
+export const EXEC_GRAD      = ['#0E0E10', '#0E0E10'] as const;
+export const EXEC_GRAD_DARK = ['#0E0E10', '#0E0E10'] as const;
 
 interface GradBtnProps {
   label: string;
@@ -19,8 +18,7 @@ interface GradBtnProps {
   icon?: React.ReactNode;
 }
 
-export default function GradBtn({ label, onPress, style, textStyle, isDark = false, size = 'md', icon }: GradBtnProps) {
-  const colors = isDark ? EXEC_GRAD_DARK : EXEC_GRAD;
+export default function GradBtn({ label, onPress, style, textStyle, size = 'md', icon }: GradBtnProps) {
   const pad = size === 'sm' ? { paddingVertical: 8, paddingHorizontal: 16 }
             : size === 'lg' ? { paddingVertical: 16, paddingHorizontal: 24 }
             : { paddingVertical: 13, paddingHorizontal: 20 };
@@ -28,38 +26,34 @@ export default function GradBtn({ label, onPress, style, textStyle, isDark = fal
 
   return (
     <TouchableOpacity onPress={onPress} activeOpacity={0.82} style={[styles.wrap, style]}>
-      <LinearGradient
-        colors={colors}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={[styles.grad, pad]}
-      >
+      <View style={[styles.inner, pad]}>
         {icon}
         <Text style={[styles.label, { fontSize: fs }, textStyle]}>{label}</Text>
-      </LinearGradient>
+      </View>
     </TouchableOpacity>
   );
 }
 
 const styles = StyleSheet.create({
   wrap: {
-    borderRadius: 14,
-    shadowColor: '#45BFFF',
+    borderRadius: 999,
+    shadowColor: '#B6D330',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.38,
-    shadowRadius: 10,
-    elevation: 6,
+    shadowOpacity: 0.30,
+    shadowRadius: 8,
+    elevation: 4,
   },
-  grad: {
-    borderRadius: 14,
+  inner: {
+    borderRadius: 999,
+    backgroundColor: '#0E0E10',
     alignItems: 'center',
     justifyContent: 'center',
     flexDirection: 'row',
     gap: 8,
   },
   label: {
-    color: '#fff',
+    color: '#D6F24A',
     fontWeight: '700',
-    letterSpacing: 0.2,
+    letterSpacing: -0.1,
   },
 });

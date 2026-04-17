@@ -2,8 +2,6 @@ import { useState, useEffect, useMemo } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, StatusBar, KeyboardAvoidingView, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
-import { LinearGradient } from 'expo-linear-gradient';
-import { BlurView } from 'expo-blur';
 import { useTaskStore } from '../../src/stores/taskStore';
 import { RADIUS, type AppColors } from '../../src/constants/config';
 import { useAppTheme } from '../../src/hooks/useAppTheme';
@@ -15,10 +13,10 @@ export default function ClarifyScreen() {
   const router = useRouter();
   const { mode } = useLocalSearchParams<{ mode?: string }>();
   const { creation, parseText, answerClarification, isCreating } = useTaskStore();
-  const { COLORS, GRADIENTS, isDark, blurTint } = useAppTheme();
-  const styles = useMemo(() => makeStyles(COLORS), [COLORS]);
+  const { COLORS, isDark } = useAppTheme();
+  const styles = useMemo(() => makeStyles(COLORS, isDark), [COLORS, isDark]);
 
-  const question    = creation.nextQuestion;
+  const question     = creation.nextQuestion;
   const isManualMode = mode === 'text' && !creation.taskId;
 
   const handleManualSubmit = async () => {
@@ -49,24 +47,15 @@ export default function ClarifyScreen() {
   return (
     <View style={styles.root}>
       <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
-      <LinearGradient colors={GRADIENTS.bg} style={StyleSheet.absoluteFill} />
-      <View style={styles.glowCenter} />
 
       <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
         <KeyboardAvoidingView style={styles.kav} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
 
           {/* Back */}
           <View style={styles.topBar}>
-            <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
-              <BlurView intensity={20} tint={blurTint} style={StyleSheet.absoluteFill} />
-              <View style={styles.backBtnBg} />
+            <TouchableOpacity onPress={() => router.back()} style={styles.backBtn} activeOpacity={0.7}>
               <Text style={styles.backIcon}>←</Text>
             </TouchableOpacity>
-          </View>
-
-          <View style={styles.container}>
-
-            {/* Progress dots (for clarify mode) */}
             {!isManualMode && question && (
               <View style={styles.progressRow}>
                 {[0, 1, 2].map((i) => (
@@ -74,7 +63,10 @@ export default function ClarifyScreen() {
                 ))}
               </View>
             )}
+            <View style={{ width: 42 }} />
+          </View>
 
+          <View style={styles.container}>
             {/* Title */}
             <Text style={styles.title}>
               {isManualMode ? 'Опишите задание' : question?.question_text ?? ''}
@@ -85,75 +77,68 @@ export default function ClarifyScreen() {
 
             {/* Input or options */}
             {isManualMode ? (
-              <View style={styles.inputWrap}>
-                <BlurView intensity={18} tint={blurTint} style={StyleSheet.absoluteFill} />
-                <View style={styles.inputBg} />
-                <TextInput
-                  style={styles.textArea}
-                  value={manualText}
-                  onChangeText={setManualText}
-                  placeholder="Что нужно сделать?"
-                  placeholderTextColor={COLORS.textLight}
-                  multiline
-                  numberOfLines={4}
-                  autoFocus
-                  textAlignVertical="top"
-                />
-              </View>
+              <TextInput
+                style={styles.textArea}
+                value={manualText}
+                onChangeText={setManualText}
+                placeholder="Что нужно сделать?"
+                placeholderTextColor={COLORS.textLight}
+                multiline
+                numberOfLines={4}
+                autoFocus
+                textAlignVertical="top"
+              />
             ) : question?.options ? (
               <View style={styles.optionsList}>
                 {question.options.map((opt) => (
                   <TouchableOpacity
                     key={opt}
-                    style={styles.optionBtn}
+                    style={[styles.optionBtn, answer === opt && styles.optionBtnActive]}
                     onPress={() => setAnswer(opt)}
                     activeOpacity={0.8}
                   >
-                    <BlurView intensity={18} tint={blurTint} style={StyleSheet.absoluteFill} />
-                    <View style={[
-                      styles.optionBg,
-                      answer === opt && { backgroundColor: COLORS.glassViolet, borderColor: COLORS.primary + '60' },
-                    ]} />
-                    {answer === opt && <View style={styles.optionCheck} />}
-                    <Text style={[styles.optionText, answer === opt && { color: COLORS.primaryLight, fontWeight: '600' }]}>
+                    <Text style={[styles.optionText, answer === opt && styles.optionTextActive]}>
                       {opt}
                     </Text>
+                    {answer === opt && (
+                      <View style={styles.optionCheck}>
+                        <Text style={{ fontSize: 12, color: '#14141A' }}>✓</Text>
+                      </View>
+                    )}
                   </TouchableOpacity>
                 ))}
               </View>
             ) : (
-              <View style={styles.inputWrap}>
-                <BlurView intensity={18} tint={blurTint} style={StyleSheet.absoluteFill} />
-                <View style={styles.inputBg} />
-                <TextInput
-                  style={styles.input}
-                  value={answer}
-                  onChangeText={setAnswer}
-                  placeholder="Введите ответ..."
-                  placeholderTextColor={COLORS.textLight}
-                  autoFocus
-                  returnKeyType="done"
-                  onSubmitEditing={handleAnswer}
-                  keyboardType={question?.input_type === 'number' ? 'number-pad' : 'default'}
-                />
-              </View>
+              <TextInput
+                style={styles.input}
+                value={answer}
+                onChangeText={setAnswer}
+                placeholder="Введите ответ..."
+                placeholderTextColor={COLORS.textLight}
+                autoFocus
+                returnKeyType="done"
+                onSubmitEditing={handleAnswer}
+                keyboardType={question?.input_type === 'number' ? 'number-pad' : 'default'}
+              />
             )}
 
             {/* Submit */}
             <TouchableOpacity
-              style={[styles.submitBtn, (isManualMode ? !manualText.trim() || isCreating : !answer || isSubmitting) && { opacity: 0.45 }]}
+              style={[
+                styles.submitBtn,
+                (isManualMode ? !manualText.trim() || isCreating : !answer || isSubmitting) && { opacity: 0.45 },
+              ]}
               onPress={isManualMode ? handleManualSubmit : handleAnswer}
               disabled={isManualMode ? !manualText.trim() || isCreating : !answer || isSubmitting}
               activeOpacity={0.85}
             >
-              <LinearGradient colors={GRADIENTS.primary} style={StyleSheet.absoluteFill} />
               <Text style={styles.submitText}>
                 {isManualMode ? (isCreating ? 'Обрабатываем...' : 'Далее →') : (isSubmitting ? 'Отправляем...' : 'Ответить')}
               </Text>
             </TouchableOpacity>
 
             {!isManualMode && (
-              <TouchableOpacity onPress={handleSkip} disabled={isSubmitting} style={styles.skipBtn}>
+              <TouchableOpacity onPress={handleSkip} disabled={isSubmitting} style={styles.skipBtn} activeOpacity={0.7}>
                 <Text style={styles.skipText}>Пропустить</Text>
               </TouchableOpacity>
             )}
@@ -164,39 +149,79 @@ export default function ClarifyScreen() {
   );
 }
 
-function makeStyles(C: AppColors, C_RADIUS = RADIUS) {
+function makeStyles(C: AppColors, isDark: boolean) {
+  const card = {
+    shadowColor: '#14141A', shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: isDark ? 0.25 : 0.06, shadowRadius: 12, elevation: 4,
+  };
   return StyleSheet.create({
-    root:       { flex: 1, backgroundColor: C.bg },
-    safe:       { flex: 1 },
-    kav:        { flex: 1 },
-    glowCenter: { position: 'absolute', top: '30%', left: '10%', width: 300, height: 300, borderRadius: 150, backgroundColor: 'rgba(139,92,246,0.12)' },
+    root: { flex: 1, backgroundColor: C.bg },
+    safe: { flex: 1 },
+    kav:  { flex: 1 },
 
-    topBar:   { paddingHorizontal: 20, paddingTop: 8 },
-    backBtn:  { width: 38, height: 38, borderRadius: 19, overflow: 'hidden', alignItems: 'center', justifyContent: 'center' },
-    backBtnBg:{ ...StyleSheet.absoluteFillObject, backgroundColor: C.glass, borderRadius: 19, borderWidth: 1, borderColor: C.glassBorder },
-    backIcon: { color: C.text, fontSize: 18, position: 'relative' },
+    // Top bar
+    topBar: {
+      flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+      paddingHorizontal: 20, paddingTop: 8, paddingBottom: 4,
+    },
+    backBtn: {
+      width: 42, height: 42, borderRadius: 21,
+      backgroundColor: C.bgLayer, alignItems: 'center', justifyContent: 'center',
+      ...card,
+    },
+    backIcon: { color: C.text, fontSize: 18 },
 
-    container:   { flex: 1, paddingHorizontal: 24, justifyContent: 'center' },
-    progressRow: { flexDirection: 'row', gap: 8, marginBottom: 32, justifyContent: 'center' },
-    dot:         { width: 8, height: 8, borderRadius: 4, backgroundColor: C.glass },
-    dotActive:   { backgroundColor: C.primary, width: 28, borderRadius: 4 },
+    progressRow: { flexDirection: 'row', gap: 8, justifyContent: 'center', flex: 1 },
+    dot:         { width: 8, height: 8, borderRadius: 4, backgroundColor: C.border },
+    dotActive:   { backgroundColor: '#D6F24A', width: 28, borderRadius: 4 },
 
-    title:    { fontSize: 24, fontWeight: '800', color: C.text, marginBottom: 8 },
+    // Content
+    container: { flex: 1, paddingHorizontal: 24, paddingTop: 24, paddingBottom: 32 },
+
+    title:    { fontSize: 24, fontWeight: '800', color: C.text, marginBottom: 8, letterSpacing: -0.5 },
     subtitle: { fontSize: 15, color: C.textMuted, marginBottom: 28, lineHeight: 22 },
 
-    inputWrap:{ borderRadius: C_RADIUS.xl, overflow: 'hidden', marginBottom: 20 },
-    inputBg:  { ...StyleSheet.absoluteFillObject, backgroundColor: C.glass, borderRadius: C_RADIUS.xl, borderWidth: 1, borderColor: C.glassBorder },
-    input:    { padding: 18, fontSize: 16, color: C.text, position: 'relative' },
-    textArea: { padding: 18, fontSize: 16, color: C.text, height: 140, position: 'relative' },
+    // Inputs
+    input: {
+      backgroundColor: C.bgLayer,
+      borderRadius: RADIUS.xl, borderWidth: 1.5, borderColor: C.border,
+      padding: 18, fontSize: 16, color: C.text, marginBottom: 20,
+      ...card,
+    },
+    textArea: {
+      backgroundColor: C.bgLayer,
+      borderRadius: RADIUS.xl, borderWidth: 1.5, borderColor: C.border,
+      padding: 18, fontSize: 16, color: C.text, height: 140, marginBottom: 20,
+      ...card,
+    },
 
-    optionsList: { marginBottom: 20, gap: 8 },
-    optionBtn:   { borderRadius: C_RADIUS.lg, overflow: 'hidden' },
-    optionBg:    { ...StyleSheet.absoluteFillObject, backgroundColor: C.glass, borderRadius: C_RADIUS.lg, borderWidth: 1, borderColor: C.glassBorder },
-    optionCheck: { position: 'absolute', right: 18, top: '50%', width: 8, height: 8, borderRadius: 4, backgroundColor: C.primary },
-    optionText:  { fontSize: 16, color: C.text, padding: 16, position: 'relative' },
+    // Options
+    optionsList: { marginBottom: 20, gap: 10 },
+    optionBtn: {
+      flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+      backgroundColor: C.bgLayer, borderRadius: RADIUS.lg,
+      borderWidth: 1.5, borderColor: C.border,
+      padding: 16, ...card,
+    },
+    optionBtnActive: {
+      borderColor: '#D6F24A', backgroundColor: 'rgba(214,242,74,0.08)',
+    },
+    optionText:      { fontSize: 16, color: C.text },
+    optionTextActive:{ fontSize: 16, color: '#14141A', fontWeight: '700' },
+    optionCheck: {
+      width: 24, height: 24, borderRadius: 12,
+      backgroundColor: '#D6F24A',
+      alignItems: 'center', justifyContent: 'center',
+    },
 
-    submitBtn:  { borderRadius: C_RADIUS.xl, overflow: 'hidden', paddingVertical: 16, alignItems: 'center', marginBottom: 12 },
-    submitText: { fontSize: 16, fontWeight: '700', color: '#fff', position: 'relative' },
+    // Submit
+    submitBtn: {
+      borderRadius: 999, paddingVertical: 18, alignItems: 'center',
+      marginBottom: 12, backgroundColor: '#0E0E10',
+      shadowColor: '#000', shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.20, shadowRadius: 10, elevation: 6,
+    },
+    submitText: { fontSize: 16, fontWeight: '800', color: '#D6F24A', letterSpacing: -0.2 },
 
     skipBtn:  { paddingVertical: 14, alignItems: 'center' },
     skipText: { color: C.textMuted, fontSize: 15 },

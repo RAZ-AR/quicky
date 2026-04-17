@@ -37,17 +37,18 @@ export default function VoiceScreen() {
     : recState === 'error' ? 'Ошибка записи'
     : 'Нажмите и говорите';
 
+  // Voice screen always uses dark ink background
   const micBg = isRecording
-    ? COLORS.danger
+    ? '#D93838'
     : isProcessing
-    ? COLORS.primary
-    : COLORS.glassViolet;
+    ? '#D6F24A'
+    : 'rgba(255,255,255,0.10)';
 
-  const micIconColor = (isRecording || isProcessing) ? '#fff' : COLORS.text;
+  const micIconColor = isProcessing ? '#14141A' : '#fff';
 
   return (
     <View style={styles.root}>
-      <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
+      <StatusBar barStyle="light-content" />
 
       <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
         {/* Top bar */}
@@ -104,7 +105,7 @@ export default function VoiceScreen() {
 
 function makeStyles(C: AppColors, isDark: boolean, R = RADIUS) {
   return StyleSheet.create({
-    root: { flex: 1, backgroundColor: C.bg },
+    root: { flex: 1, backgroundColor: '#0E0E10' },
     safe: { flex: 1 },
 
     // Top bar
@@ -114,47 +115,46 @@ function makeStyles(C: AppColors, isDark: boolean, R = RADIUS) {
     },
     backBtn: {
       width: 38, height: 38, borderRadius: 19,
-      backgroundColor: C.bgLayer,
-      borderWidth: 1, borderColor: C.border,
+      backgroundColor: 'rgba(255,255,255,0.08)',
       alignItems: 'center', justifyContent: 'center',
     },
-    backIcon:  { color: C.text, fontSize: 18 },
-    topTitle:  { fontSize: 17, fontWeight: '700', color: C.text },
+    backIcon:  { color: '#fff', fontSize: 18 },
+    topTitle:  { fontSize: 17, fontWeight: '700', color: '#fff' },
 
     // Center
     center: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 32 },
 
     status: {
-      fontSize: 22, fontWeight: '700', color: C.text,
+      fontSize: 22, fontWeight: '700', color: '#fff',
       marginBottom: 56, textAlign: 'center', letterSpacing: -0.3,
     },
-    errorText: { color: C.danger, fontSize: 14, marginBottom: 20, textAlign: 'center' },
+    errorText: { color: '#FF6B6B', fontSize: 14, marginBottom: 20, textAlign: 'center' },
 
     // Mic button
     micBtn: {
-      width: 130, height: 130, borderRadius: 65,
+      width: 140, height: 140, borderRadius: 70,
       alignItems: 'center', justifyContent: 'center',
       marginBottom: 48,
+      borderWidth: 2, borderColor: 'rgba(255,255,255,0.10)',
     },
     micWrap: {
-      width: 110, height: 110, borderRadius: 55,
-      borderWidth: 1,
+      width: 140, height: 140, borderRadius: 70,
+      borderWidth: 2, borderColor: '#D6F24A',
       alignItems: 'center', justifyContent: 'center',
       marginBottom: 48,
     },
     micIcon: { fontSize: 52 },
 
     hint: {
-      fontSize: 15, color: C.textMuted, textAlign: 'center',
+      fontSize: 15, color: 'rgba(255,255,255,0.50)', textAlign: 'center',
       lineHeight: 22, maxWidth: 260,
     },
 
     retryBtn: {
       marginTop: 32, borderRadius: R.full,
-      backgroundColor: C.bgLayer,
-      borderWidth: 1, borderColor: C.border,
+      backgroundColor: 'rgba(255,255,255,0.08)',
       paddingHorizontal: 24, paddingVertical: 12,
     },
-    retryText: { color: C.primary, fontSize: 15, fontWeight: '600' },
+    retryText: { color: '#D6F24A', fontSize: 15, fontWeight: '600' },
   });
 }

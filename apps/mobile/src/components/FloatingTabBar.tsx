@@ -1,9 +1,8 @@
 import { useRef, useEffect } from 'react';
 import {
   View, Text, StyleSheet, TouchableOpacity,
-  Animated, useWindowDimensions, Platform,
+  Animated, useWindowDimensions,
 } from 'react-native';
-import { BlurView } from 'expo-blur';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { BottomTabBarProps } from '@react-navigation/bottom-tabs';
@@ -22,109 +21,84 @@ interface FloatingTabBarProps extends BottomTabBarProps {
   centerAction?: { onPress: () => void; icon?: string };
 }
 
-const SIDE_PAD   = 20;
-const BAR_HEIGHT = 58;
-const BTN_SIZE   = 54;
-const BTN_GAP    = 10;
-const ACTIVE_H   = 44;
+// ── Quicky Dark Dock Tab Bar ───────────────────────────────────────────────────
+// Dark pill (#0E0E10) · Active: acid yellow (#D6F24A) · Inactive: white/55%
 
-// ── Liquid Glass Tab Bar ───────────────────────────────────────────────────────
+const SIDE_PAD   = 16;
+const BAR_HEIGHT = 60;
+const BTN_SIZE   = 52;
+const BTN_GAP    = 10;
+
 export function FloatingTabBar({
   state, navigation,
-  tabs, accentColor,
+  tabs,
   actionButton, centerAction,
 }: FloatingTabBarProps) {
-  const insets   = useSafeAreaInsets();
+  const insets = useSafeAreaInsets();
   const { width: SCREEN_W } = useWindowDimensions();
   const btnAction = actionButton ?? centerAction;
 
   const activeIndex = tabs.findIndex(t => t.name === state.routes[state.index]?.name);
   const safeIdx     = Math.max(0, activeIndex);
 
-  const widthAnims = useRef(tabs.map((_, i) => new Animated.Value(i === 0 ? 1 : 0))).current;
+  const scaleAnims = useRef(tabs.map(() => new Animated.Value(1))).current;
 
   useEffect(() => {
-    tabs.forEach((_, i) => {
-      Animated.spring(widthAnims[i], {
-        toValue: i === safeIdx ? 1 : 0,
-        useNativeDriver: false,
-        tension: 200,
-        friction: 22,
+    Animated.spring(scaleAnims[safeIdx], {
+      toValue: 1.05, useNativeDriver: true, tension: 300, friction: 20,
+    }).start(() => {
+      Animated.spring(scaleAnims[safeIdx], {
+        toValue: 1, useNativeDriver: true, tension: 300, friction: 20,
       }).start();
     });
   }, [safeIdx]);
 
-  const totalHeight = BAR_HEIGHT + Math.max(insets.bottom, 8) + 10;
+  const bottomPad   = Math.max(insets.bottom, 8);
   const containerW  = SCREEN_W - SIDE_PAD * 2;
   const pillW       = btnAction ? containerW - BTN_SIZE - BTN_GAP : containerW;
 
   return (
-    <View style={[s.root, { height: totalHeight, paddingBottom: Math.max(insets.bottom, 8) }]}>
+    <View style={[s.root, { height: BAR_HEIGHT + bottomPad + 10, paddingBottom: bottomPad }]}>
       <View style={[s.row, { width: containerW }]}>
 
-        {/* ── Liquid Glass pill ── */}
-        <View style={[s.pillWrapper, { width: pillW, height: BAR_HEIGHT }]}>
-          {/* Blur layer */}
-          <BlurView
-            intensity={72}
-            tint="light"
-            style={StyleSheet.absoluteFill}
-          />
-          {/* White glass overlay */}
-          <View style={s.glassOverlay} />
-          {/* Specular highlight — thin top line */}
-          <View style={s.specular} />
+        {/* ── Dark dock pill ── */}
+        <View style={[s.dock, { width: pillW, height: BAR_HEIGHT }]}>
+          {tabs.map((tab, i) => {
+            const focused  = safeIdx === i;
+            const route    = state.routes.find(r => r.name === tab.name);
+            const iconName = (tab.ionIcon ?? 'ellipse') as any;
 
-          {/* Tabs */}
-          <View style={s.pillInner}>
-            {tabs.map((tab, i) => {
-              const focused  = safeIdx === i;
-              const route    = state.routes.find(r => r.name === tab.name);
-              const iconName = (tab.ionIcon ?? 'ellipse') as any;
-
-              const labelOpacity = widthAnims[i];
-              const labelMaxW    = widthAnims[i].interpolate({
-                inputRange:  [0, 1],
-                outputRange: [0, 78],
-              });
-
-              return (
-                <TouchableOpacity
-                  key={tab.name}
-                  onPress={() => { if (route) navigation.navigate(route.name); }}
-                  activeOpacity={0.7}
-                  style={focused ? s.tabActive : s.tabInactive}
-                >
-                  <Ionicons
-                    name={iconName}
-                    size={22}
-                    color={focused ? '#FFFFFF' : 'rgba(60,60,67,0.60)'}
-                  />
-                  <Animated.Text
-                    style={[s.tabLabel, { opacity: labelOpacity, maxWidth: labelMaxW }]}
-                    numberOfLines={1}
-                  >
+            return (
+              <TouchableOpacity
+                key={tab.name}
+                onPress={() => { if (route) navigation.navigate(route.name); }}
+                activeOpacity={0.75}
+                style={focused ? s.tabActive : s.tabInactive}
+              >
+                <Ionicons
+                  name={iconName}
+                  size={20}
+                  color={focused ? '#14141A' : 'rgba(255,255,255,0.55)'}
+                />
+                {focused && (
+                  <Text style={s.tabLabel} numberOfLines={1}>
                     {tab.label}
-                  </Animated.Text>
-                </TouchableOpacity>
-              );
-            })}
-          </View>
+                  </Text>
+                )}
+              </TouchableOpacity>
+            );
+          })}
         </View>
 
-        {/* ── Action button (liquid glass + accent) ── */}
+        {/* ── Acid action button ── */}
         {btnAction && (
-          <View style={s.actionWrapper}>
-            <BlurView intensity={60} tint="light" style={StyleSheet.absoluteFill} />
-            <View style={[s.actionGlassOverlay, { backgroundColor: accentColor + 'CC' }]} />
-            <TouchableOpacity
-              style={s.actionInner}
-              onPress={btnAction.onPress}
-              activeOpacity={0.8}
-            >
-              <Ionicons name="add" size={28} color="#FFFFFF" />
-            </TouchableOpacity>
-          </View>
+          <TouchableOpacity
+            style={s.actionBtn}
+            onPress={btnAction.onPress}
+            activeOpacity={0.8}
+          >
+            <Ionicons name="add" size={26} color="#14141A" />
+          </TouchableOpacity>
         )}
 
       </View>
@@ -148,92 +122,62 @@ const s = StyleSheet.create({
     gap:           BTN_GAP,
   },
 
-  // ── Pill ──
-  pillWrapper: {
+  // ── Dark dock ──
+  dock: {
+    backgroundColor: '#0E0E10',
     borderRadius:    999,
-    overflow:        'hidden',
-    // Glass shadow
-    shadowColor:     'rgba(0,0,0,0.18)',
-    shadowOffset:    { width: 0, height: 6 },
-    shadowOpacity:   1,
-    shadowRadius:    20,
-    elevation:       16,
-    // Thin border
-    borderWidth:     1,
-    borderColor:     'rgba(255,255,255,0.55)',
-  },
-  glassOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(255,255,255,0.45)',
-  },
-  specular: {
-    position:        'absolute',
-    top:             0,
-    left:            24,
-    right:           24,
-    height:          1,
-    backgroundColor: 'rgba(255,255,255,0.90)',
-    borderRadius:    999,
-  },
-  pillInner: {
-    flex:             1,
-    flexDirection:    'row',
-    alignItems:       'center',
-    justifyContent:   'space-evenly',
-    paddingHorizontal: 6,
+    flexDirection:   'row',
+    alignItems:      'center',
+    justifyContent:  'space-evenly',
+    paddingHorizontal: 8,
+    // Shadow
+    shadowColor:    '#000',
+    shadowOffset:   { width: 0, height: 8 },
+    shadowOpacity:  0.30,
+    shadowRadius:   20,
+    elevation:      16,
   },
 
-  // ── Active tab ──
+  // ── Active tab: acid yellow pill ──
   tabActive: {
     flexDirection:     'row',
     alignItems:        'center',
     justifyContent:    'center',
     gap:               6,
-    height:            ACTIVE_H,
-    paddingHorizontal: 14,
-    backgroundColor:   'rgba(60,60,67,0.75)',
+    height:            42,
+    paddingHorizontal: 16,
+    backgroundColor:   '#D6F24A',
     borderRadius:      999,
-    overflow:          'hidden',
-    // inner glow
-    shadowColor:       '#000',
+    shadowColor:       '#B6D330',
     shadowOffset:      { width: 0, height: 2 },
-    shadowOpacity:     0.15,
+    shadowOpacity:     0.40,
     shadowRadius:      6,
   },
   tabInactive: {
-    width:           50,
-    height:          ACTIVE_H,
+    width:           46,
+    height:          42,
     alignItems:      'center',
     justifyContent:  'center',
-    backgroundColor: 'transparent',
   },
   tabLabel: {
     fontSize:   13,
     fontWeight: '700',
-    color:      '#FFFFFF',
-    overflow:   'hidden',
+    color:      '#14141A',
+    letterSpacing: -0.1,
   },
 
-  // ── Action button ──
-  actionWrapper: {
-    width:        BTN_SIZE,
-    height:       BTN_SIZE,
-    borderRadius: BTN_SIZE / 2,
-    overflow:     'hidden',
-    borderWidth:  1,
-    borderColor:  'rgba(255,255,255,0.50)',
-    shadowColor:  '#000',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.22,
-    shadowRadius:  14,
-    elevation:     12,
-  },
-  actionGlassOverlay: {
-    ...StyleSheet.absoluteFillObject,
-  },
-  actionInner: {
-    flex:            1,
+  // ── Acid action button ──
+  actionBtn: {
+    width:           BTN_SIZE,
+    height:          BTN_SIZE,
+    borderRadius:    BTN_SIZE / 2,
+    backgroundColor: '#D6F24A',
     alignItems:      'center',
     justifyContent:  'center',
+    shadowColor:     '#B6D330',
+    shadowOffset:    { width: 0, height: 4 },
+    shadowOpacity:   0.40,
+    shadowRadius:    10,
+    elevation:       8,
   },
 });

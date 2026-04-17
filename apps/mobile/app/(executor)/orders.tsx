@@ -111,10 +111,10 @@ function OrderCard({ task, isNew, onPress, onAccept, COLORS, styles, isDark }: {
   const stateColor = TASK_STATE_COLORS[task.state] ?? COLORS.textMuted;
 
   return (
-    <TouchableOpacity style={[styles.card, { borderLeftColor: cat.dark }]} onPress={onPress} activeOpacity={0.8}>
+    <TouchableOpacity style={[styles.card, { borderLeftColor: cat.color }]} onPress={onPress} activeOpacity={0.8}>
       <View style={styles.cardTop}>
-        <View style={[styles.iconChip, { backgroundColor: cat.dark + '22' }]}>
-          <Ionicons name={cat.icon as any} size={16} color={cat.dark} />
+        <View style={[styles.iconChip, { backgroundColor: cat.color }]}>
+          <Ionicons name={cat.icon as any} size={16} color={cat.textColor} />
         </View>
         <View style={styles.cardMeta}>
           <Text style={styles.cardTitle} numberOfLines={2}>{task.item_description ?? 'Задание'}</Text>
@@ -228,7 +228,7 @@ export default function ExecutorOrdersScreen() {
               key={cat.key}
               style={[
                 styles.catChip,
-                catFilter === cat.key && { backgroundColor: COLORS.executor + '22', borderColor: COLORS.executor },
+                catFilter === cat.key && { backgroundColor: 'rgba(214,242,74,0.20)', borderColor: '#B6D330' },
               ]}
               onPress={() => setCatFilter(cat.key)}
               activeOpacity={0.8}
@@ -236,9 +236,9 @@ export default function ExecutorOrdersScreen() {
               <Ionicons
                 name={cat.icon as any}
                 size={13}
-                color={catFilter === cat.key ? COLORS.executor : COLORS.textMuted}
+                color={catFilter === cat.key ? '#14141A' : COLORS.textMuted}
               />
-              <Text style={[styles.catLabel, catFilter === cat.key && { color: COLORS.executor, fontWeight: '700' }]}>
+              <Text style={[styles.catLabel, catFilter === cat.key && { color: '#14141A', fontWeight: '700' }]}>
                 {cat.label}
               </Text>
             </TouchableOpacity>
@@ -312,7 +312,11 @@ function makeStyles(C: AppColors, isDark: boolean) {
       borderRadius: RADIUS.xl,
       padding: 4,
       gap: 4,
-      ...(isDark ? SHADOW.sm : NEO.card),
+      shadowColor: '#14141A',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.06,
+      shadowRadius: 12,
+      elevation: 4,
     },
     segBtn: {
       flex: 1,
@@ -321,11 +325,10 @@ function makeStyles(C: AppColors, isDark: boolean) {
       borderRadius: RADIUS.lg,
     },
     segBtnActive: {
-      backgroundColor: C.executor,
-      ...(isDark ? SHADOW.sm : NEO.btn),
+      backgroundColor: '#0E0E10',
     },
     segText: { fontSize: 14, fontWeight: '600', color: C.textMuted },
-    segTextActive: { color: '#fff', fontWeight: '700' },
+    segTextActive: { color: '#D6F24A', fontWeight: '700' },
 
     // Category scroll
     catScroll:   { flexGrow: 0, marginBottom: 10 },
@@ -351,13 +354,11 @@ function makeStyles(C: AppColors, isDark: boolean) {
       marginBottom: 10,
       padding: 14,
       gap: 8,
-      ...(isDark ? SHADOW.sm : {
-        shadowColor: '#9BA3BC',
-        shadowOffset: { width: 5, height: 5 },
-        shadowOpacity: 0.40,
-        shadowRadius: 10,
-        elevation: 8,
-      }),
+      shadowColor: '#14141A',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: isDark ? 0.25 : 0.06,
+      shadowRadius: 12,
+      elevation: 4,
     },
     cardTop: { flexDirection: 'row', alignItems: 'flex-start', gap: 10 },
     iconChip: {

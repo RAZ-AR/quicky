@@ -2,23 +2,31 @@ import { useState, useMemo } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, KeyboardAvoidingView, Platform, ScrollView, StatusBar } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams } from 'expo-router';
-import { LinearGradient } from 'expo-linear-gradient';
-import { BlurView } from 'expo-blur';
 import { useAuthStore } from '../../src/stores/authStore';
 import { RADIUS, type AppColors } from '../../src/constants/config';
 import { useAppTheme } from '../../src/hooks/useAppTheme';
+
+// Quicky static palette (register is always light)
+const Q = {
+  bg:    '#F3F1EC',
+  card:  '#FFFFFF',
+  ink:   '#14141A',
+  ink50: 'rgba(20,20,26,0.52)',
+  ink08: 'rgba(20,20,26,0.08)',
+  acid:  '#D6F24A',
+  mint:  '#C9E9D0',
+};
 
 export default function RegisterScreen() {
   const { temp_token, suggested_name } = useLocalSearchParams<{ temp_token: string; suggested_name: string }>();
   const [name, setName] = useState(suggested_name ?? '');
   const [role, setRole] = useState<'client' | 'executor' | null>(null);
   const { completeSocialRegistration, isLoading } = useAuthStore();
-  const { COLORS, GRADIENTS, isDark, blurTint } = useAppTheme();
-  const styles = useMemo(() => makeStyles(COLORS), [COLORS]);
+  const { isDark } = useAppTheme();
 
   const ROLES = [
-    { key: 'client'   as const, emoji: '🛒', name: 'Клиент',      desc: 'Создаю задания — купить, доставить, помочь', gradient: GRADIENTS.primary },
-    { key: 'executor' as const, emoji: '⚡', name: 'Исполнитель', desc: 'Выполняю задания и зарабатываю',              gradient: GRADIENTS.executor },
+    { key: 'client'   as const, emoji: '🛍️', title: 'Заказчик',    desc: 'Создаю задания',      activeBg: Q.acid },
+    { key: 'executor' as const, emoji: '⚡',  title: 'Исполнитель', desc: 'Выполняю и зарабатываю', activeBg: Q.mint },
   ];
 
   const handleRegister = async () => {
@@ -35,87 +43,71 @@ export default function RegisterScreen() {
   const canSubmit = name.trim().length > 0 && !!role && !isLoading;
 
   return (
-    <View style={styles.root}>
-      <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
-      <LinearGradient colors={GRADIENTS.bg} style={StyleSheet.absoluteFill} />
-      <View style={styles.glow1} />
-      <View style={styles.glow2} />
-
-      <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
-        <KeyboardAvoidingView style={styles.kav} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-          <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
+    <View style={s.root}>
+      <StatusBar barStyle="dark-content" />
+      <SafeAreaView style={s.safe} edges={['top', 'bottom']}>
+        <KeyboardAvoidingView style={s.kav} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+          <ScrollView contentContainerStyle={s.scroll} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
 
             {/* Logo */}
-            <View style={styles.logoArea}>
-              <View style={styles.logoWrap}>
-                <LinearGradient colors={GRADIENTS.primary} style={StyleSheet.absoluteFill} />
-                <View style={styles.logoBorder} />
-                <Text style={styles.logoEmoji}>⚡</Text>
+            <View style={s.logoArea}>
+              <View style={s.logoMark}>
+                <Text style={{ fontSize: 32 }}>⚡</Text>
               </View>
-              <Text style={styles.logoText}>Quicky</Text>
+              <Text style={s.logoText}>Quicky</Text>
             </View>
 
-            {/* Form */}
-            <View style={styles.formCard}>
-              <BlurView intensity={20} tint={blurTint} style={StyleSheet.absoluteFill} />
-              <View style={styles.formCardBg} />
-              <View style={{ position: 'relative', padding: 24 }}>
-                <Text style={styles.title}>Создать аккаунт</Text>
-                <Text style={styles.subtitle}>Как вас зовут?</Text>
+            {/* Form card */}
+            <View style={s.card}>
+              <Text style={s.title}>Создать аккаунт</Text>
+              <Text style={s.subtitle}>Как вас зовут?</Text>
 
-                <View style={styles.inputWrap}>
-                  <BlurView intensity={15} tint={blurTint} style={StyleSheet.absoluteFill} />
-                  <View style={styles.inputBg} />
-                  <TextInput
-                    style={styles.input}
-                    value={name}
-                    onChangeText={setName}
-                    placeholder="Ваше имя"
-                    placeholderTextColor={COLORS.textLight}
-                    autoCapitalize="words"
-                    autoFocus
-                    returnKeyType="next"
-                  />
-                </View>
+              <TextInput
+                style={s.input}
+                value={name}
+                onChangeText={setName}
+                placeholder="Ваше имя"
+                placeholderTextColor={Q.ink50}
+                autoCapitalize="words"
+                autoFocus
+                returnKeyType="next"
+              />
 
-                <Text style={styles.roleTitle}>Кем вы хотите быть?</Text>
+              <Text style={s.roleTitle}>Кем вы хотите быть?</Text>
 
-                <View style={styles.rolesRow}>
-                  {ROLES.map((r) => (
+              <View style={s.rolesRow}>
+                {ROLES.map((r) => {
+                  const isActive = role === r.key;
+                  return (
                     <TouchableOpacity
                       key={r.key}
-                      style={styles.roleCard}
+                      style={[s.roleCard, isActive && { backgroundColor: r.activeBg, borderColor: 'transparent' }]}
                       onPress={() => setRole(r.key)}
                       activeOpacity={0.85}
                     >
-                      <BlurView intensity={18} tint={blurTint} style={StyleSheet.absoluteFill} />
-                      <View style={[
-                        styles.roleCardBg,
-                        role === r.key && { backgroundColor: r.key === 'client' ? COLORS.glassViolet : COLORS.glassCyan, borderColor: (r.key === 'client' ? COLORS.primary : COLORS.executor) + '60' },
-                      ]} />
-                      {role === r.key && (
-                        <LinearGradient colors={r.gradient} style={[StyleSheet.absoluteFill, { opacity: 0.12 }]} />
-                      )}
-                      {role === r.key && <View style={[styles.roleCheck, { backgroundColor: r.key === 'client' ? COLORS.primary : COLORS.executor }]} />}
-                      <View style={{ position: 'relative', alignItems: 'center', padding: 16 }}>
-                        <Text style={styles.roleEmoji}>{r.emoji}</Text>
-                        <Text style={[styles.roleName, role === r.key && { color: r.key === 'client' ? COLORS.primaryLight : COLORS.executorLight }]}>{r.name}</Text>
-                        <Text style={styles.roleDesc}>{r.desc}</Text>
+                      <View style={s.roleIconWrap}>
+                        <Text style={{ fontSize: 24 }}>{r.emoji}</Text>
                       </View>
+                      <Text style={[s.roleName, isActive && { color: Q.ink }]}>{r.title}</Text>
+                      <Text style={[s.roleDesc, isActive && { color: `${Q.ink}80` }]}>{r.desc}</Text>
+                      {isActive && (
+                        <View style={s.roleCheck}>
+                          <Text style={{ fontSize: 11, color: Q.ink }}>✓</Text>
+                        </View>
+                      )}
                     </TouchableOpacity>
-                  ))}
-                </View>
-
-                <TouchableOpacity
-                  style={[styles.btn, !canSubmit && { opacity: 0.45 }]}
-                  onPress={handleRegister}
-                  disabled={!canSubmit}
-                  activeOpacity={0.85}
-                >
-                  <LinearGradient colors={role === 'executor' ? GRADIENTS.executor : GRADIENTS.primary} style={StyleSheet.absoluteFill} />
-                  <Text style={styles.btnText}>{isLoading ? 'Создаём аккаунт...' : 'Начать →'}</Text>
-                </TouchableOpacity>
+                  );
+                })}
               </View>
+
+              <TouchableOpacity
+                style={[s.btn, !canSubmit && { opacity: 0.45 }]}
+                onPress={handleRegister}
+                disabled={!canSubmit}
+                activeOpacity={0.85}
+              >
+                <Text style={s.btnText}>{isLoading ? 'Создаём аккаунт...' : 'Начать →'}</Text>
+              </TouchableOpacity>
             </View>
 
             <View style={{ height: 40 }} />
@@ -126,43 +118,67 @@ export default function RegisterScreen() {
   );
 }
 
-function makeStyles(C: AppColors, C_RADIUS = RADIUS) {
-  return StyleSheet.create({
-    root: { flex: 1, backgroundColor: C.bg },
-    safe: { flex: 1 },
-    kav:  { flex: 1 },
-    glow1: { position: 'absolute', top: '5%',  left: '5%',  width: 220, height: 220, borderRadius: 110, backgroundColor: 'rgba(139,92,246,0.15)' },
-    glow2: { position: 'absolute', top: '50%', right: '-5%',width: 180, height: 180, borderRadius: 90,  backgroundColor: 'rgba(6,182,212,0.10)' },
+const cardShadow = {
+  shadowColor: '#14141A', shadowOffset: { width: 0, height: 2 },
+  shadowOpacity: 0.06, shadowRadius: 16, elevation: 4,
+};
 
-    scroll: { paddingHorizontal: 24, paddingTop: 20 },
+const s = StyleSheet.create({
+  root: { flex: 1, backgroundColor: Q.bg },
+  safe: { flex: 1 },
+  kav:  { flex: 1 },
 
-    logoArea: { alignItems: 'center', marginBottom: 24 },
-    logoWrap: { width: 68, height: 68, borderRadius: 22, overflow: 'hidden', alignItems: 'center', justifyContent: 'center', marginBottom: 8 },
-    logoBorder:{ ...StyleSheet.absoluteFillObject, borderRadius: 22, borderWidth: 1, borderColor: 'rgba(255,255,255,0.20)' },
-    logoEmoji: { fontSize: 34, position: 'relative' },
-    logoText:  { fontSize: 28, fontWeight: '800', color: C.text },
+  scroll: { paddingHorizontal: 24, paddingTop: 20 },
 
-    formCard:   { borderRadius: C_RADIUS.xxl, overflow: 'hidden' },
-    formCardBg: { ...StyleSheet.absoluteFillObject, backgroundColor: C.glass, borderRadius: C_RADIUS.xxl, borderWidth: 1, borderColor: C.glassBorder },
+  logoArea: { alignItems: 'center', marginBottom: 24, gap: 8 },
+  logoMark: {
+    width: 68, height: 68, borderRadius: 22,
+    backgroundColor: Q.ink,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  logoText: { fontSize: 28, fontWeight: '800', color: Q.ink, letterSpacing: -1 },
 
-    title:    { fontSize: 22, fontWeight: '800', color: C.text, marginBottom: 6 },
-    subtitle: { fontSize: 14, color: C.textMuted, marginBottom: 16 },
+  card: {
+    backgroundColor: Q.card, borderRadius: RADIUS.xxl, padding: 24,
+    ...cardShadow,
+  },
 
-    inputWrap: { borderRadius: C_RADIUS.xl, overflow: 'hidden', marginBottom: 24 },
-    inputBg:   { ...StyleSheet.absoluteFillObject, backgroundColor: C.bgLayer, borderRadius: C_RADIUS.xl, borderWidth: 1, borderColor: C.glassBorder },
-    input:     { padding: 18, fontSize: 18, color: C.text, position: 'relative' },
+  title:    { fontSize: 22, fontWeight: '800', color: Q.ink, marginBottom: 6, letterSpacing: -0.4 },
+  subtitle: { fontSize: 14, color: Q.ink50, marginBottom: 16 },
 
-    roleTitle: { fontSize: 14, color: C.textMuted, marginBottom: 12, fontWeight: '600' },
+  input: {
+    backgroundColor: Q.bg, borderRadius: RADIUS.xl,
+    borderWidth: 1.5, borderColor: Q.ink08,
+    padding: 18, fontSize: 18, color: Q.ink, marginBottom: 24,
+  },
 
-    rolesRow: { flexDirection: 'row', gap: 10, marginBottom: 20 },
-    roleCard:    { flex: 1, borderRadius: C_RADIUS.xl, overflow: 'hidden' },
-    roleCardBg:  { ...StyleSheet.absoluteFillObject, backgroundColor: C.glass, borderRadius: C_RADIUS.xl, borderWidth: 1, borderColor: C.glassBorder },
-    roleCheck:   { position: 'absolute', top: 10, right: 10, width: 8, height: 8, borderRadius: 4 },
-    roleEmoji:   { fontSize: 28, marginBottom: 6 },
-    roleName:    { fontSize: 15, fontWeight: '700', color: C.text, marginBottom: 4, textAlign: 'center' },
-    roleDesc:    { fontSize: 12, color: C.textMuted, textAlign: 'center', lineHeight: 16 },
+  roleTitle: { fontSize: 14, color: Q.ink50, marginBottom: 12, fontWeight: '600' },
 
-    btn:     { borderRadius: C_RADIUS.xl, overflow: 'hidden', paddingVertical: 16, alignItems: 'center' },
-    btnText: { fontSize: 16, fontWeight: '700', color: '#fff', position: 'relative' },
-  });
-}
+  rolesRow: { flexDirection: 'row', gap: 10, marginBottom: 20 },
+  roleCard: {
+    flex: 1, borderRadius: RADIUS.xl, padding: 16, alignItems: 'center', gap: 6,
+    backgroundColor: Q.bg, borderWidth: 2, borderColor: Q.ink08,
+    position: 'relative',
+  },
+  roleIconWrap: {
+    width: 48, height: 48, borderRadius: 14,
+    backgroundColor: 'rgba(255,255,255,0.50)',
+    alignItems: 'center', justifyContent: 'center',
+  },
+  roleName: { fontSize: 14, fontWeight: '800', color: Q.ink, textAlign: 'center' },
+  roleDesc: { fontSize: 11, color: Q.ink50, textAlign: 'center', lineHeight: 14 },
+  roleCheck: {
+    position: 'absolute', top: 8, right: 8,
+    width: 20, height: 20, borderRadius: 10,
+    backgroundColor: 'rgba(255,255,255,0.60)',
+    alignItems: 'center', justifyContent: 'center',
+  },
+
+  btn: {
+    borderRadius: 999, paddingVertical: 16, alignItems: 'center',
+    backgroundColor: Q.ink,
+    shadowColor: '#000', shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.20, shadowRadius: 10, elevation: 6,
+  },
+  btnText: { fontSize: 16, fontWeight: '800', color: Q.acid, letterSpacing: -0.2 },
+});

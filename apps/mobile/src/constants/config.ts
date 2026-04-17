@@ -6,122 +6,146 @@ export const API_URL = process.env.EXPO_PUBLIC_API_URL
   ?? RENDER_URL;
 export const SOCKET_URL = API_URL;
 
-// ─── Dark Neon Bento ──────────────────────────────────────────────────────────
+// ─── Quicky Design System ─────────────────────────────────────────────────────
+// Acid yellow #D6F24A · Warm canvas #F3F1EC · Ink dark #0E0E10
+
+export const LIGHT_COLORS = {
+  primary:        '#D6F24A',   // acid yellow — Quicky signature
+  primaryLight:   '#E9F7A8',   // acidSoft
+  primaryDark:    '#B6D330',   // acidDeep
+  primaryGlow:    'rgba(214,242,74,0.22)',
+
+  executor:       '#C9E9D0',   // mint
+  executorLight:  '#E0F5E4',
+  executorGlow:   'rgba(201,233,208,0.35)',
+
+  success:        '#0E8B4A',
+  successLight:   '#2AA060',
+  successGlow:    'rgba(14,139,74,0.12)',
+
+  danger:         '#D93838',
+  dangerLight:    '#E55555',
+  dangerGlow:     'rgba(217,56,56,0.10)',
+
+  warning:        '#E8A53A',
+  warningLight:   '#F0C060',
+  warningGlow:    'rgba(232,165,58,0.15)',
+
+  hot:            '#D93838',
+  hotGlow:        'rgba(217,56,56,0.15)',
+
+  // ── Card accents (category colors) ──
+  cardYellow:     '#E9F7A8',
+  cardMint:       '#C9E9D0',
+  cardBlue:       '#C7E6FF',
+  cardPeach:      '#FFD9C2',
+  cardLavender:   '#E8E4F0',
+
+  // ── Backgrounds ──
+  bg:             '#F3F1EC',   // warm canvas
+  bgLayer:        '#FFFFFF',   // card surface
+  bgElevated:     '#FFFFFF',
+  bgInk:          '#0E0E10',   // for tab bar / dark pills
+
+  // ── Glass ──
+  glass:          'rgba(255,255,255,0.80)',
+  glassLight:     'rgba(255,255,255,0.96)',
+  glassBorder:    'rgba(20,20,26,0.06)',
+  glassBorderSubtle: 'rgba(20,20,26,0.03)',
+  glassViolet:    'rgba(214,242,74,0.15)',
+  glassCyan:      'rgba(201,233,208,0.20)',
+
+  // ── Ink text ──
+  text:           '#14141A',
+  textMuted:      'rgba(20,20,26,0.52)',
+  textLight:      'rgba(20,20,26,0.28)',
+  border:         'rgba(20,20,26,0.08)',
+  divider:        'rgba(20,20,26,0.05)',
+
+  // ── Components ──
+  card:           '#FFFFFF',
+  tabBar:         '#0E0E10',    // dark floating dock
+  tabBarActive:   '#D6F24A',    // acid yellow active pill
+  tabBarInactive: 'rgba(255,255,255,0.55)',
+  surface:        'rgba(255,255,255,0.95)',
+  overlay:        'rgba(14,14,16,0.50)',
+};
+
 export const DARK_COLORS = {
-  primary:        '#FF8C5A',
-  primaryLight:   '#FFA07A',
-  primaryDark:    '#E85A20',
-  primaryGlow:    'rgba(255,140,90,0.18)',
+  primary:        '#D6F24A',
+  primaryLight:   '#E9F7A8',
+  primaryDark:    '#B6D330',
+  primaryGlow:    'rgba(214,242,74,0.20)',
+
   executor:       '#A8F0B0',
   executorLight:  '#C8F8D0',
   executorGlow:   'rgba(168,240,176,0.18)',
+
   success:        '#A8F0B0',
   successLight:   '#C8F8D0',
   successGlow:    'rgba(168,240,176,0.15)',
+
   danger:         '#FF6B6B',
   dangerLight:    '#FF9090',
   dangerGlow:     'rgba(255,107,107,0.18)',
-  warning:        '#F0E440',
-  warningLight:   '#F5EE70',
-  warningGlow:    'rgba(240,228,64,0.18)',
+
+  warning:        '#E8A53A',
+  warningLight:   '#F0C060',
+  warningGlow:    'rgba(232,165,58,0.18)',
+
   hot:            '#FF6B6B',
   hotGlow:        'rgba(255,107,107,0.22)',
-  // ── Neon card accents ──
-  cardYellow:     '#F0E440',
+
+  cardYellow:     '#E9F7A8',
   cardMint:       '#A8F0B0',
-  cardBlue:       '#B8DCF5',
-  cardPeach:      '#F5C4A0',
+  cardBlue:       '#C7E6FF',
+  cardPeach:      '#FFD9C2',
   cardLavender:   '#D4C8F0',
-  // ──────────────────────
-  bg:             '#0F0F0F',
-  bgLayer:        '#1A1A1A',
-  bgElevated:     '#242424',
+
+  bg:             '#0E0E10',
+  bgLayer:        '#1A1A1E',
+  bgElevated:     '#242428',
+  bgInk:          '#0E0E10',
+
   glass:          'rgba(255,255,255,0.05)',
   glassLight:     'rgba(255,255,255,0.08)',
   glassBorder:    'rgba(255,255,255,0.08)',
   glassBorderSubtle: 'rgba(255,255,255,0.04)',
-  glassViolet:    'rgba(212,200,240,0.15)',
+  glassViolet:    'rgba(214,242,74,0.12)',
   glassCyan:      'rgba(168,240,176,0.12)',
+
   text:           '#FFFFFF',
   textMuted:      'rgba(255,255,255,0.45)',
   textLight:      'rgba(255,255,255,0.25)',
   border:         'rgba(255,255,255,0.08)',
   divider:        'rgba(255,255,255,0.06)',
-  card:           '#1A1A1A',
-  tabBar:         '#1A1A1A',
-  tabBarActive:   '#FF8C5A',
+
+  card:           '#1A1A1E',
+  tabBar:         '#0E0E10',
+  tabBarActive:   '#D6F24A',
   tabBarInactive: 'rgba(255,255,255,0.50)',
-  surface:        'rgba(26,26,26,0.95)',
+  surface:        'rgba(26,26,30,0.95)',
   overlay:        'rgba(0,0,0,0.70)',
 };
 
-// ─── Light (Neo-Tactile Neumorphic) ──────────────────────────────────────────
-export const LIGHT_COLORS = {
-  primary:        '#FF6B2E',
-  primaryLight:   '#FF8C5A',
-  primaryDark:    '#E85A20',
-  primaryGlow:    'rgba(255,107,46,0.12)',
-  executor:       '#3D7A5E',
-  executorLight:  '#5A9A78',
-  executorGlow:   'rgba(61,122,94,0.12)',
-  success:        '#34C759',
-  successLight:   '#5DD879',
-  successGlow:    'rgba(52,199,89,0.12)',
-  danger:         '#FF3B30',
-  dangerLight:    '#FF6B62',
-  dangerGlow:     'rgba(255,59,48,0.10)',
-  warning:        '#FF9500',
-  warningLight:   '#FFAD33',
-  warningGlow:    'rgba(255,149,0,0.10)',
-  hot:            '#FF3B30',
-  hotGlow:        'rgba(255,59,48,0.12)',
-  // ── Card accents (light mode pastel equivalents) ──
-  cardYellow:     '#FFF3CC',
-  cardMint:       '#D5F0E0',
-  cardBlue:       '#D5E8F5',
-  cardPeach:      '#FFE5D5',
-  cardLavender:   '#EDE0F8',
-  // ──────────────────────────────────────────────────
-  bg:             '#E2E5EF',
-  bgLayer:        '#E2E5EF',
-  bgElevated:     '#EAEDF7',
-  glass:          'rgba(255,255,255,0.55)',
-  glassLight:     'rgba(255,255,255,0.82)',
-  glassBorder:    'rgba(255,255,255,0.85)',
-  glassBorderSubtle: 'rgba(255,255,255,0.60)',
-  glassViolet:    'rgba(237,224,248,0.60)',
-  glassCyan:      'rgba(213,240,224,0.60)',
-  text:           '#1A1C2A',
-  textMuted:      'rgba(26,28,42,0.50)',
-  textLight:      'rgba(26,28,42,0.28)',
-  border:         'rgba(255,255,255,0.85)',
-  divider:        'rgba(26,28,42,0.06)',
-  card:           '#E2E5EF',
-  tabBar:         '#E2E5EF',
-  tabBarActive:   '#FF6B2E',
-  tabBarInactive: 'rgba(26,28,42,0.35)',
-  surface:        '#E2E5EF',
-  overlay:        'rgba(26,28,42,0.25)',
-};
-
 export const DARK_GRADIENTS = {
-  bg:       ['#1C1A18', '#242220', '#1C1A18'] as const,
-  hero:     ['rgba(255,140,90,0.20)', 'rgba(104,168,130,0.10)', 'transparent'] as const,
-  card:     ['rgba(245,243,239,0.09)', 'rgba(245,243,239,0.04)'] as const,
-  primary:  ['#FFA07A', '#FF8C5A'] as const,
-  executor: ['#88C4A0', '#68A882'] as const,
+  bg:       ['#0E0E10', '#1A1A1E', '#0E0E10'] as const,
+  hero:     ['rgba(214,242,74,0.15)', 'rgba(201,233,208,0.08)', 'transparent'] as const,
+  card:     ['rgba(255,255,255,0.06)', 'rgba(255,255,255,0.02)'] as const,
+  primary:  ['#E9F7A8', '#D6F24A'] as const,
+  executor: ['#C8F8D0', '#A8F0B0'] as const,
   success:  ['#88C4A0', '#68A882'] as const,
   danger:   ['#E89A9A', '#D97A7A'] as const,
   hot:      ['#E89A9A', '#D4B060'] as const,
 };
 
 export const LIGHT_GRADIENTS = {
-  bg:       ['#F2F2F7', '#F2F2F7', '#F2F2F7'] as const,
-  hero:     ['rgba(255,107,46,0.10)', 'rgba(61,122,94,0.06)', 'transparent'] as const,
-  card:     ['#FFFFFF', '#F2F2F7'] as const,
-  primary:  ['#FF8C5A', '#FF6B2E'] as const,
-  executor: ['#5A9A78', '#3D7A5E'] as const,
-  success:  ['#5DD879', '#34C759'] as const,
+  bg:       ['#F3F1EC', '#F3F1EC', '#F3F1EC'] as const,
+  hero:     ['rgba(214,242,74,0.18)', 'rgba(201,233,208,0.10)', 'transparent'] as const,
+  card:     ['#FFFFFF', '#F8F7F3'] as const,
+  primary:  ['#E9F7A8', '#D6F24A'] as const,
+  executor: ['#C9E9D0', '#A8E0B8'] as const,
+  success:  ['#60D890', '#34C759'] as const,
   danger:   ['#FF6B62', '#FF3B30'] as const,
   hot:      ['#FF6B62', '#FF9500'] as const,
 };
@@ -133,50 +157,49 @@ export const RADIUS = { sm: 8, md: 12, lg: 16, xl: 22, xxl: 30, full: 999 };
 
 export const SHADOW = {
   sm: {
-    shadowColor: '#000', shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.06, shadowRadius: 3, elevation: 2,
+    shadowColor: '#14141A', shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.06, shadowRadius: 4, elevation: 2,
   },
   md: {
-    shadowColor: '#000', shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08, shadowRadius: 6, elevation: 4,
+    shadowColor: '#14141A', shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08, shadowRadius: 8, elevation: 4,
   },
   lg: {
-    shadowColor: '#000', shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.10, shadowRadius: 12, elevation: 8,
+    shadowColor: '#14141A', shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.10, shadowRadius: 16, elevation: 8,
   },
   orange: {
-    shadowColor: '#FF6B2E', shadowOffset: { width: 0, height: 4 },
+    // kept for backward compat — points to acid
+    shadowColor: '#D6F24A', shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.40, shadowRadius: 10, elevation: 8,
+  },
+  acid: {
+    shadowColor: '#B6D330', shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.35, shadowRadius: 10, elevation: 8,
   },
 };
 
 export const NEO = {
   card: {
-    shadowColor:   '#9BA3BC',
-    shadowOffset:  { width: 5, height: 5 },
-    shadowOpacity: 0.40,
-    shadowRadius:  10,
-    elevation:     8,
-    borderWidth:   1.5,
-    borderColor:   'rgba(255,255,255,0.85)',
+    shadowColor:   '#14141A',
+    shadowOffset:  { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius:  16,
+    elevation:     4,
   },
   btn: {
-    shadowColor:   '#9BA3BC',
-    shadowOffset:  { width: 3, height: 3 },
-    shadowOpacity: 0.35,
-    shadowRadius:  6,
-    elevation:     4,
-    borderWidth:   1.5,
-    borderColor:   'rgba(255,255,255,0.75)',
+    shadowColor:   '#14141A',
+    shadowOffset:  { width: 0, height: 1 },
+    shadowOpacity: 0.08,
+    shadowRadius:  8,
+    elevation:     3,
   },
   pressed: {
-    shadowColor:   '#9BA3BC',
-    shadowOffset:  { width: 2, height: 2 },
-    shadowOpacity: 0.20,
+    shadowColor:   '#14141A',
+    shadowOffset:  { width: 0, height: 1 },
+    shadowOpacity: 0.04,
     shadowRadius:  4,
-    elevation:     2,
-    borderWidth:   1,
-    borderColor:   'rgba(255,255,255,0.60)',
+    elevation:     1,
   },
 };
 
@@ -208,26 +231,26 @@ export const TASK_STATE_LABELS: Record<string, string> = {
 };
 
 export const TASK_STATE_COLORS: Record<string, string> = {
-  draft:           '#8E8E93',
-  pending_confirm: '#FF9500',
-  published:       '#FF6B2E',
-  accepted:        '#34C759',
-  in_progress:     '#007AFF',
-  pending_client:  '#FF9500',
-  completed:       '#34C759',
-  rated:           '#34C759',
-  cancelled:       '#FF3B30',
-  disputed:        '#FF3B30',
+  draft:           '#B8B2A3',
+  pending_confirm: '#E8A53A',
+  published:       '#D6F24A',
+  accepted:        '#0E8B4A',
+  in_progress:     '#C7E6FF',
+  pending_client:  '#E8A53A',
+  completed:       '#0E8B4A',
+  rated:           '#0E8B4A',
+  cancelled:       '#D93838',
+  disputed:        '#D93838',
 };
 
 export const CATEGORIES = [
-  { key: 'shopping',  label: 'Покупки',    icon: 'cart-outline',         color: '#FFE5D5', dark: '#F5C4A0', textColor: '#7A3010',  darkText: '#2A1000' },
-  { key: 'delivery',  label: 'Доставка',   icon: 'cube-outline',         color: '#D5EDE8', dark: '#A8F0B0', textColor: '#0E3A34',  darkText: '#003A10' },
-  { key: 'food',      label: 'Еда',        icon: 'restaurant-outline',   color: '#DCF0D0', dark: '#C8F0A0', textColor: '#1A3A0A',  darkText: '#102800' },
-  { key: 'cleaning',  label: 'Клининг',    icon: 'sparkles-outline',     color: '#E8E0F0', dark: '#D4C8F0', textColor: '#2A1040',  darkText: '#1A0A30' },
-  { key: 'errand',    label: 'Поручение',  icon: 'list-outline',         color: '#E0EAF8', dark: '#B8DCF5', textColor: '#0A1A40',  darkText: '#001830' },
-  { key: 'courier',   label: 'Курьер',     icon: 'bicycle-outline',      color: '#FFF0D5', dark: '#F0E440', textColor: '#402A00',  darkText: '#2A2000' },
-  { key: 'other',     label: 'Другое',     icon: 'ellipsis-horizontal',  color: '#EBEBF0', dark: '#E0E0E0', textColor: '#2A2A30',  darkText: '#1A1A1A' },
+  { key: 'shopping',  label: 'Покупки',    icon: 'cart-outline',         color: '#FFD9C2', dark: '#E8A53A', textColor: '#7A3010',  darkText: '#3A1800' },
+  { key: 'delivery',  label: 'Доставка',   icon: 'cube-outline',         color: '#C7E6FF', dark: '#5BAAD6', textColor: '#0A2A40',  darkText: '#001830' },
+  { key: 'food',      label: 'Еда',        icon: 'restaurant-outline',   color: '#C9E9D0', dark: '#4CAF78', textColor: '#0E3A1A',  darkText: '#002A10' },
+  { key: 'cleaning',  label: 'Клининг',    icon: 'sparkles-outline',     color: '#E8E4F0', dark: '#9B8DC8', textColor: '#2A1A44',  darkText: '#1A0A30' },
+  { key: 'errand',    label: 'Поручение',  icon: 'list-outline',         color: '#E9F7A8', dark: '#B6D330', textColor: '#2A3800',  darkText: '#1A2800' },
+  { key: 'courier',   label: 'Курьер',     icon: 'bicycle-outline',      color: '#FFD9C2', dark: '#E8783A', textColor: '#402A00',  darkText: '#2A1800' },
+  { key: 'other',     label: 'Другое',     icon: 'ellipsis-horizontal',  color: '#F0EDE8', dark: '#B8B2A3', textColor: '#2A2A22',  darkText: '#1A1A14' },
 ] as const;
 export type CategoryKey = typeof CATEGORIES[number]['key'];
 
@@ -241,5 +264,6 @@ export const RECOMMENDED_PRICES: Record<string, { min: number; max: number }> = 
   other:     { min: 300,  max: 500 },
 };
 
-export const COLORS    = DARK_COLORS;
-export const GRADIENTS = DARK_GRADIENTS;
+// Default theme — warm Quicky light palette
+export const COLORS    = LIGHT_COLORS;
+export const GRADIENTS = LIGHT_GRADIENTS;

@@ -25,7 +25,7 @@ export function useAppTheme(): AppTheme {
 
   const isDark =
     preference === 'system'
-      ? systemScheme !== 'light'   // default dark when system unknown
+      ? systemScheme === 'dark'    // default light when system unknown
       : preference === 'dark';
 
   const colors = isDark ? DARK_COLORS : LIGHT_COLORS;

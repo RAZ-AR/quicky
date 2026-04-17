@@ -672,10 +672,10 @@ function makeStyles(C: AppColors, isDark: boolean, R = RADIUS) {
     },
     avatar: {
       width: 60, height: 60, borderRadius: 30,
-      backgroundColor: C.primary,
+      backgroundColor: '#0E0E10',
       alignItems: 'center', justifyContent: 'center',
     },
-    avatarText:   { fontSize: 24, fontWeight: '800', color: '#fff' },
+    avatarText:   { fontSize: 24, fontWeight: '800', color: '#D6F24A' },
     profileName:  { fontSize: 17, fontWeight: '800', color: C.text, marginBottom: 2, letterSpacing: -0.2 },
     profilePhone: { fontSize: 13, color: C.textMuted, marginBottom: 6 },
     roleBadge: {
@@ -801,14 +801,15 @@ function makeStyles(C: AppColors, isDark: boolean, R = RADIUS) {
 
     // Buttons
     primaryBtn: {
-      backgroundColor: C.primary,
-      borderRadius: R.xl,
+      backgroundColor: '#0E0E10',
+      borderRadius: 999,
       paddingVertical: 14,
       alignItems: 'center',
       marginTop: 4,
-      ...SHADOW.orange,
+      shadowColor: '#B6D330', shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.30, shadowRadius: 10, elevation: 6,
     },
-    primaryBtnText: { color: '#fff', fontWeight: '700', fontSize: 16 },
+    primaryBtnText: { color: '#D6F24A', fontWeight: '700', fontSize: 16 },
 
     // Address
     addressRow: {

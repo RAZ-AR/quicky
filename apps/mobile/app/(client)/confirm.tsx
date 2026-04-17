@@ -2,8 +2,6 @@ import { useState, useMemo } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Alert, StatusBar } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { LinearGradient } from 'expo-linear-gradient';
-import { BlurView } from 'expo-blur';
 import { useTaskStore } from '../../src/stores/taskStore';
 import { RADIUS, type AppColors } from '../../src/constants/config';
 import { useAppTheme } from '../../src/hooks/useAppTheme';
@@ -18,8 +16,8 @@ export default function ConfirmScreen() {
   const { creation, confirmTask, resetCreation } = useTaskStore();
   const [paymentMethod, setPaymentMethod] = useState('cash');
   const [isConfirming, setIsConfirming] = useState(false);
-  const { COLORS, GRADIENTS, isDark, blurTint } = useAppTheme();
-  const styles = useMemo(() => makeStyles(COLORS), [COLORS]);
+  const { COLORS, isDark } = useAppTheme();
+  const styles = useMemo(() => makeStyles(COLORS, isDark), [COLORS, isDark]);
 
   const parsed = creation.parsed;
   if (!parsed) return null;
@@ -44,15 +42,11 @@ export default function ConfirmScreen() {
   return (
     <View style={styles.root}>
       <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
-      <LinearGradient colors={GRADIENTS.bg} style={StyleSheet.absoluteFill} />
-      <View style={styles.glowAccent} />
 
       <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
         {/* Back */}
         <View style={styles.topBar}>
-          <TouchableOpacity onPress={handleCancel} style={styles.backBtn}>
-            <BlurView intensity={20} tint={blurTint} style={StyleSheet.absoluteFill} />
-            <View style={styles.backBtnBg} />
+          <TouchableOpacity onPress={handleCancel} style={styles.backBtn} activeOpacity={0.7}>
             <Text style={styles.backIcon}>←</Text>
           </TouchableOpacity>
         </View>
@@ -63,31 +57,18 @@ export default function ConfirmScreen() {
 
           {/* Task details card */}
           <View style={styles.card}>
-            <BlurView intensity={18} tint={blurTint} style={StyleSheet.absoluteFill} />
-            <View style={styles.cardBg} />
-            <View style={{ position: 'relative', padding: 20 }}>
-              {parsed.category && <DetailRow label="📌 Категория"   value={parsed.category} styles={styles} />}
-              <DetailRow label="📦 Что нужно"   value={parsed.item_description ?? '—'} styles={styles} />
-              {parsed.from_location && <DetailRow label="🏪 Откуда"  value={parsed.from_location.address} styles={styles} />}
-              <DetailRow label="📍 Куда"         value={parsed.to_location?.address ?? '—'} last styles={styles} />
-            </View>
+            {parsed.category && <DetailRow label="📌 Категория"   value={parsed.category} styles={styles} />}
+            <DetailRow label="📦 Что нужно"   value={parsed.item_description ?? '—'} styles={styles} />
+            {parsed.from_location && <DetailRow label="🏪 Откуда"  value={parsed.from_location.address} styles={styles} />}
+            <DetailRow label="📍 Куда"         value={parsed.to_location?.address ?? '—'} last styles={styles} />
           </View>
 
           {/* Price hero */}
           <View style={styles.priceCard}>
-            <BlurView intensity={25} tint={blurTint} style={StyleSheet.absoluteFill} />
-            <LinearGradient
-              colors={['rgba(139,92,246,0.35)', 'rgba(6,182,212,0.20)']}
-              start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
-              style={StyleSheet.absoluteFill}
-            />
-            <View style={styles.priceBorder} />
-            <View style={{ position: 'relative', padding: 20, alignItems: 'center' }}>
-              <Text style={styles.priceLabel}>Рекомендованная стоимость</Text>
-              <Text style={styles.priceValue}>{price} ₽</Text>
-              <View style={styles.aiPill}>
-                <Text style={styles.aiPillText}>✦ Рассчитано AI</Text>
-              </View>
+            <Text style={styles.priceLabel}>Рекомендованная стоимость</Text>
+            <Text style={styles.priceValue}>{price} ₽</Text>
+            <View style={styles.aiPill}>
+              <Text style={styles.aiPillText}>✦ Рассчитано AI</Text>
             </View>
           </View>
 
@@ -97,20 +78,18 @@ export default function ConfirmScreen() {
             {PAYMENT_METHODS.map((m) => (
               <TouchableOpacity
                 key={m.key}
-                style={styles.paymentBtn}
+                style={[
+                  styles.paymentBtn,
+                  paymentMethod === m.key && styles.paymentBtnActive,
+                ]}
                 onPress={() => setPaymentMethod(m.key)}
                 activeOpacity={0.8}
               >
-                <BlurView intensity={18} tint={blurTint} style={StyleSheet.absoluteFill} />
-                <View style={[
-                  styles.paymentBg,
-                  paymentMethod === m.key && { backgroundColor: COLORS.glassViolet, borderColor: COLORS.primary + '60' },
-                ]} />
-                {paymentMethod === m.key && (
-                  <LinearGradient colors={GRADIENTS.primary} style={styles.paymentActiveGlow} />
-                )}
                 <Text style={styles.paymentIcon}>{m.icon}</Text>
-                <Text style={[styles.paymentLabel, paymentMethod === m.key && { color: COLORS.primaryLight, fontWeight: '700' }]}>
+                <Text style={[
+                  styles.paymentLabel,
+                  paymentMethod === m.key && { color: '#14141A', fontWeight: '700' },
+                ]}>
                   {m.label}
                 </Text>
               </TouchableOpacity>
@@ -119,18 +98,17 @@ export default function ConfirmScreen() {
 
           {/* Confirm button */}
           <TouchableOpacity
-            style={[styles.confirmBtn, isConfirming && { opacity: 0.5 }]}
+            style={[styles.confirmBtn, isConfirming && { opacity: 0.55 }]}
             onPress={handleConfirm}
             disabled={isConfirming}
             activeOpacity={0.85}
           >
-            <LinearGradient colors={GRADIENTS.primary} style={StyleSheet.absoluteFill} />
             <Text style={styles.confirmText}>
               {isConfirming ? 'Публикуем...' : `Опубликовать за ${price} ₽`}
             </Text>
           </TouchableOpacity>
 
-          <TouchableOpacity onPress={handleCancel} style={styles.cancelBtn}>
+          <TouchableOpacity onPress={handleCancel} style={styles.cancelBtn} activeOpacity={0.7}>
             <Text style={styles.cancelText}>Отмена</Text>
           </TouchableOpacity>
 
@@ -150,55 +128,81 @@ function DetailRow({ label, value, last, styles }: { label: string; value: strin
   );
 }
 
-function makeStyles(C: AppColors, C_RADIUS = RADIUS) {
+function makeStyles(C: AppColors, isDark: boolean) {
+  const card = {
+    shadowColor: '#14141A', shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: isDark ? 0.25 : 0.06, shadowRadius: 16, elevation: 4,
+  };
   return StyleSheet.create({
     root: { flex: 1, backgroundColor: C.bg },
     safe: { flex: 1 },
-    glowAccent: {
-      position: 'absolute', top: '20%', right: -40,
-      width: 200, height: 200, borderRadius: 100,
-      backgroundColor: 'rgba(139,92,246,0.15)',
+
+    topBar:  { paddingHorizontal: 20, paddingTop: 8 },
+    backBtn: {
+      width: 42, height: 42, borderRadius: 21,
+      backgroundColor: C.bgLayer,
+      alignItems: 'center', justifyContent: 'center',
+      ...card,
     },
+    backIcon: { color: C.text, fontSize: 18 },
 
-    topBar:    { paddingHorizontal: 20, paddingTop: 8 },
-    backBtn:   { width: 38, height: 38, borderRadius: 19, overflow: 'hidden', alignItems: 'center', justifyContent: 'center' },
-    backBtnBg: { ...StyleSheet.absoluteFillObject, backgroundColor: C.glass, borderRadius: 19, borderWidth: 1, borderColor: C.glassBorder },
-    backIcon:  { color: C.text, fontSize: 18, position: 'relative' },
+    scroll: { paddingHorizontal: 20, paddingTop: 12 },
 
-    scroll: { paddingHorizontal: 20, paddingTop: 8 },
-
-    title:    { fontSize: 26, fontWeight: '800', color: C.text, marginBottom: 6 },
+    title:    { fontSize: 26, fontWeight: '800', color: C.text, marginBottom: 6, letterSpacing: -0.6 },
     subtitle: { fontSize: 15, color: C.textMuted, marginBottom: 20, lineHeight: 22 },
 
-    card:   { borderRadius: C_RADIUS.xl, overflow: 'hidden', marginBottom: 16 },
-    cardBg: { ...StyleSheet.absoluteFillObject, backgroundColor: C.glass, borderRadius: C_RADIUS.xl, borderWidth: 1, borderColor: C.glassBorder },
-
+    // Task details card
+    card: {
+      backgroundColor: C.bgLayer,
+      borderRadius: RADIUS.xl, padding: 20, marginBottom: 16,
+      ...card,
+    },
     row:        { flexDirection: 'row', paddingVertical: 10 },
     rowDivider: { borderBottomWidth: 1, borderBottomColor: C.divider },
     rowLabel:   { flex: 1, fontSize: 14, color: C.textMuted },
     rowValue:   { flex: 2, fontSize: 14, fontWeight: '500', color: C.text },
 
-    priceCard:   { borderRadius: C_RADIUS.xxl, overflow: 'hidden', marginBottom: 20 },
-    priceBorder: { ...StyleSheet.absoluteFillObject, borderRadius: C_RADIUS.xxl, borderWidth: 1, borderColor: C.glassBorder },
-    priceLabel:  { fontSize: 13, color: C.textMuted, marginBottom: 4 },
-    priceValue:  { fontSize: 44, fontWeight: '800', color: C.text, marginBottom: 8 },
-    aiPill: {
-      backgroundColor: C.glassViolet, borderRadius: C_RADIUS.full,
-      paddingHorizontal: 12, paddingVertical: 4,
-      borderWidth: 1, borderColor: C.primary + '40',
+    // Price card
+    priceCard: {
+      backgroundColor: '#0E0E10',
+      borderRadius: RADIUS.xxl, padding: 24,
+      alignItems: 'center', marginBottom: 24,
+      shadowColor: '#000', shadowOffset: { width: 0, height: 6 },
+      shadowOpacity: 0.20, shadowRadius: 20, elevation: 10,
     },
-    aiPillText: { fontSize: 12, color: C.primaryLight, fontWeight: '600' },
+    priceLabel:  { fontSize: 13, color: 'rgba(255,255,255,0.55)', marginBottom: 4 },
+    priceValue:  { fontSize: 48, fontWeight: '800', color: '#D6F24A', marginBottom: 12, letterSpacing: -2 },
+    aiPill: {
+      backgroundColor: 'rgba(214,242,74,0.15)',
+      borderRadius: 999, paddingHorizontal: 12, paddingVertical: 6,
+      borderWidth: 1, borderColor: 'rgba(214,242,74,0.30)',
+    },
+    aiPillText: { fontSize: 12, color: '#D6F24A', fontWeight: '600' },
 
+    // Payment
     sectionTitle: { fontSize: 15, fontWeight: '700', color: C.text, marginBottom: 12 },
     paymentRow:   { flexDirection: 'row', gap: 12, marginBottom: 24 },
-    paymentBtn:   { flex: 1, borderRadius: C_RADIUS.xl, overflow: 'hidden', paddingVertical: 16, alignItems: 'center' },
-    paymentBg:    { ...StyleSheet.absoluteFillObject, backgroundColor: C.glass, borderRadius: C_RADIUS.xl, borderWidth: 1, borderColor: C.glassBorder },
-    paymentActiveGlow: { ...StyleSheet.absoluteFillObject, opacity: 0.08 },
-    paymentIcon:  { fontSize: 26, marginBottom: 4, position: 'relative' },
-    paymentLabel: { fontSize: 14, color: C.text, position: 'relative' },
+    paymentBtn:   {
+      flex: 1, backgroundColor: C.bgLayer, borderRadius: RADIUS.xl,
+      paddingVertical: 18, alignItems: 'center', gap: 6,
+      borderWidth: 2, borderColor: C.border,
+      ...card,
+    },
+    paymentBtnActive: {
+      borderColor: '#D6F24A', backgroundColor: 'rgba(214,242,74,0.08)',
+    },
+    paymentIcon:  { fontSize: 26 },
+    paymentLabel: { fontSize: 14, color: C.textMuted, fontWeight: '600' },
 
-    confirmBtn:  { borderRadius: C_RADIUS.xl, overflow: 'hidden', paddingVertical: 16, alignItems: 'center', marginBottom: 12 },
-    confirmText: { fontSize: 16, fontWeight: '700', color: '#fff', position: 'relative' },
+    // Confirm button
+    confirmBtn: {
+      borderRadius: 999, paddingVertical: 18,
+      alignItems: 'center', marginBottom: 12,
+      backgroundColor: '#0E0E10',
+      shadowColor: '#000', shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.20, shadowRadius: 10, elevation: 6,
+    },
+    confirmText: { fontSize: 16, fontWeight: '800', color: '#D6F24A', letterSpacing: -0.2 },
 
     cancelBtn:  { paddingVertical: 14, alignItems: 'center' },
     cancelText: { color: C.textMuted, fontSize: 15 },

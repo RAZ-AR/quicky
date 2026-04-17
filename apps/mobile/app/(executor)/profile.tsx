@@ -2,8 +2,7 @@ import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet, StatusBar,
   Alert, Modal, TextInput, Switch, Linking, ActivityIndicator,
 } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
-import { EXEC_GRAD, EXEC_GRAD_DARK } from '../../src/components/GradBtn';
+// LinearGradient removed — using flat dark ink buttons
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
@@ -256,21 +255,21 @@ export default function ExecutorProfileScreen() {
                       key={cat.key}
                       style={[
                         styles.serviceChip,
-                        active && { backgroundColor: COLORS.executor + '22', borderColor: COLORS.executor },
+                        active && { backgroundColor: 'rgba(214,242,74,0.20)', borderColor: '#B6D330' },
                       ]}
                       onPress={() => toggleService(cat.key)}
                       activeOpacity={0.75}
                     >
-                      <Ionicons name={cat.icon as any} size={14} color={active ? COLORS.executor : COLORS.textMuted} />
-                      <Text style={[styles.serviceChipText, active && { color: COLORS.executor }]}>{cat.label}</Text>
+                      <Ionicons name={cat.icon as any} size={14} color={active ? '#14141A' : COLORS.textMuted} />
+                      <Text style={[styles.serviceChipText, active && { color: '#14141A', fontWeight: '700' }]}>{cat.label}</Text>
                     </TouchableOpacity>
                   );
                 })}
               </View>
               <TouchableOpacity style={styles.gradBtnWrap} onPress={saveServices} activeOpacity={0.85}>
-                <LinearGradient colors={isDark ? EXEC_GRAD_DARK : EXEC_GRAD} start={{x:0,y:0}} end={{x:1,y:1}} style={styles.gradBtnInner}>
+                <View style={styles.gradBtnInner}>
                   <Text style={styles.gradBtnText}>Сохранить</Text>
-                </LinearGradient>
+                </View>
               </TouchableOpacity>
             </View>
           </View>
@@ -443,12 +442,12 @@ export default function ExecutorProfileScreen() {
             activeOpacity={0.8}
             disabled={editSaving}
           >
-            <LinearGradient colors={isDark ? EXEC_GRAD_DARK : EXEC_GRAD} start={{x:0,y:0}} end={{x:1,y:1}} style={styles.gradBtnInner}>
+            <View style={styles.gradBtnInner}>
               {editSaving
-                ? <ActivityIndicator size="small" color="#fff" />
+                ? <ActivityIndicator size="small" color="#D6F24A" />
                 : <Text style={styles.gradBtnText}>Сохранить</Text>
               }
-            </LinearGradient>
+            </View>
           </TouchableOpacity>
         </View>
       </ModalShell>
@@ -533,9 +532,9 @@ export default function ExecutorProfileScreen() {
             onPress={() => setReqModalVisible(false)}
             activeOpacity={0.8}
           >
-            <LinearGradient colors={isDark ? EXEC_GRAD_DARK : EXEC_GRAD} start={{x:0,y:0}} end={{x:1,y:1}} style={styles.gradBtnInner}>
+            <View style={styles.gradBtnInner}>
               <Text style={styles.gradBtnText}>Сохранить</Text>
-            </LinearGradient>
+            </View>
           </TouchableOpacity>
         </View>
       </ModalShell>
@@ -595,14 +594,15 @@ function makeStyles(C: AppColors, isDark: boolean, R = RADIUS) {
       flexDirection: 'row', alignItems: 'center', gap: 14,
       backgroundColor: C.bgLayer, borderRadius: R.xl,
       padding: 16, marginBottom: 12,
-      ...(isDark ? SHADOW.sm : NEO.card),
+      shadowColor: '#14141A', shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: isDark ? 0.25 : 0.06, shadowRadius: 16, elevation: 4,
     },
     avatar: {
       width: 60, height: 60, borderRadius: 30,
-      backgroundColor: C.executor,
+      backgroundColor: '#0E0E10',
       alignItems: 'center', justifyContent: 'center',
     },
-    avatarText:   { fontSize: 24, fontWeight: '800', color: isDark ? '#0F1F0F' : '#fff' },
+    avatarText:   { fontSize: 24, fontWeight: '800', color: '#D6F24A' },
     profileName:  { fontSize: 17, fontWeight: '800', color: C.text, marginBottom: 2, letterSpacing: -0.2 },
     profilePhone: { fontSize: 13, color: C.textMuted, marginBottom: 6 },
     roleBadge: {
@@ -624,7 +624,8 @@ function makeStyles(C: AppColors, isDark: boolean, R = RADIUS) {
       flex: 1, borderRadius: R.lg,
       backgroundColor: C.bgLayer,
       paddingVertical: 12, alignItems: 'center',
-      ...(isDark ? SHADOW.sm : NEO.btn),
+      shadowColor: '#14141A', shadowOffset: { width: 0, height: 1 },
+      shadowOpacity: isDark ? 0.20 : 0.05, shadowRadius: 6, elevation: 2,
     },
     statValue: { fontSize: 15, fontWeight: '800', marginBottom: 2 },
     statLabel: { fontSize: 9, color: C.textMuted, fontWeight: '600', textTransform: 'uppercase', textAlign: 'center' },
@@ -641,8 +642,8 @@ function makeStyles(C: AppColors, isDark: boolean, R = RADIUS) {
       backgroundColor: C.bgLayer,
       borderRadius: R.xl,
       marginBottom: 20,
-      overflow: isDark ? 'hidden' : 'visible',
-      ...(isDark ? SHADOW.sm : NEO.card),
+      shadowColor: '#14141A', shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: isDark ? 0.25 : 0.06, shadowRadius: 16, elevation: 4,
     },
 
     // Menu row
@@ -667,7 +668,7 @@ function makeStyles(C: AppColors, isDark: boolean, R = RADIUS) {
       alignItems: 'center', justifyContent: 'center',
       backgroundColor: C.bgElevated,
     },
-    themeChipActive: { backgroundColor: C.executor },
+    themeChipActive: { backgroundColor: '#0E0E10' },
 
     // Services
     servicesBody: { padding: 14 },
@@ -687,9 +688,9 @@ function makeStyles(C: AppColors, isDark: boolean, R = RADIUS) {
       flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
       gap: 8,
       borderRadius: R.xl,
-      backgroundColor: isDark ? C.dangerGlow : 'rgba(255,59,48,0.08)',
+      backgroundColor: 'rgba(217,56,56,0.08)',
+      borderWidth: 1, borderColor: 'rgba(217,56,56,0.12)',
       paddingVertical: 15, marginBottom: 8,
-      ...(isDark ? { borderWidth: 1, borderColor: C.danger + '25' } : NEO.btn),
     },
     logoutText: { color: C.danger, fontWeight: '700', fontSize: 15 },
 
@@ -739,23 +740,24 @@ function makeStyles(C: AppColors, isDark: boolean, R = RADIUS) {
       marginBottom: 14,
     },
 
-    // Gradient buttons
+    // Gradient buttons — now dark ink + acid yellow
     gradBtnWrap: {
-      borderRadius: R.xl,
+      borderRadius: 999,
       marginTop: 4,
-      shadowColor: '#45BFFF',
-      shadowOffset: { width: 0, height: 4 },
-      shadowOpacity: 0.38,
-      shadowRadius: 10,
-      elevation: 6,
+      shadowColor: '#B6D330',
+      shadowOffset: { width: 0, height: 3 },
+      shadowOpacity: 0.28,
+      shadowRadius: 8,
+      elevation: 4,
     },
     gradBtnInner: {
-      borderRadius: R.xl,
+      borderRadius: 999,
       paddingVertical: 14,
       alignItems: 'center',
       justifyContent: 'center',
+      backgroundColor: '#0E0E10',
     },
-    gradBtnText: { color: '#fff', fontWeight: '700', fontSize: 16 },
+    gradBtnText: { color: '#D6F24A', fontWeight: '700', fontSize: 16 },
     // Legacy (kept for TypeScript, unused)
     primaryBtn: { borderRadius: R.xl },
     primaryBtnText: { color: '#fff', fontWeight: '700', fontSize: 16 },
