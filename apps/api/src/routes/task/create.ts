@@ -55,6 +55,9 @@ const taskCreateRoutes: FastifyPluginAsync = async (fastify) => {
   fastify.post('/task/voice', {
     onRequest: async (req, reply) => fastify.authenticate(req, reply),
   }, async (req, reply) => {
+    if (req.user.role === 'executor') {
+      return reply.status(403).send({ error: 'Forbidden', message: 'Исполнитель не может создавать заказы' });
+    }
     const data = await req.file();
     if (!data) {
       return reply.status(400).send({ error: 'BadRequest', message: 'Аудиофайл не найден' });
@@ -112,6 +115,9 @@ const taskCreateRoutes: FastifyPluginAsync = async (fastify) => {
   fastify.post('/task/parse', {
     onRequest: async (req, reply) => fastify.authenticate(req, reply),
   }, async (req, reply) => {
+    if (req.user.role === 'executor') {
+      return reply.status(403).send({ error: 'Forbidden', message: 'Исполнитель не может создавать заказы' });
+    }
     const body = ParseBody.safeParse(req.body);
     if (!body.success) {
       return reply.status(400).send({ error: 'Validation', message: body.error.errors[0]?.message });
