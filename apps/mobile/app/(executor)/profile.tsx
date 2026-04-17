@@ -2,6 +2,8 @@ import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet, StatusBar,
   Alert, Modal, TextInput, Switch, Linking, ActivityIndicator,
 } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+import { EXEC_GRAD, EXEC_GRAD_DARK } from '../../src/components/GradBtn';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
@@ -110,7 +112,11 @@ export default function ExecutorProfileScreen() {
     if (!editName.trim()) return;
     setEditSaving(true);
     try {
-      await api.patch('/users/me', { name: editName.trim() });
+      const { data } = await api.patch('/auth/me', { name: editName.trim() });
+      // Обновляем пользователя в authStore
+      useAuthStore.setState(s => ({
+        user: s.user ? { ...s.user, name: data.user?.name ?? editName.trim() } : s.user,
+      }));
       setEditModalVisible(false);
     } catch {
       Alert.alert('Ошибка', 'Не удалось сохранить профиль');
@@ -261,8 +267,10 @@ export default function ExecutorProfileScreen() {
                   );
                 })}
               </View>
-              <TouchableOpacity style={styles.saveServicesBtn} onPress={saveServices} activeOpacity={0.85}>
-                <Text style={styles.saveServicesBtnText}>Сохранить</Text>
+              <TouchableOpacity style={styles.gradBtnWrap} onPress={saveServices} activeOpacity={0.85}>
+                <LinearGradient colors={isDark ? EXEC_GRAD_DARK : EXEC_GRAD} start={{x:0,y:0}} end={{x:1,y:1}} style={styles.gradBtnInner}>
+                  <Text style={styles.gradBtnText}>Сохранить</Text>
+                </LinearGradient>
               </TouchableOpacity>
             </View>
           </View>
@@ -430,15 +438,17 @@ export default function ExecutorProfileScreen() {
             onSubmitEditing={saveProfile}
           />
           <TouchableOpacity
-            style={[styles.primaryBtn, editSaving && { opacity: 0.6 }]}
+            style={[styles.gradBtnWrap, editSaving && { opacity: 0.6 }]}
             onPress={saveProfile}
             activeOpacity={0.8}
             disabled={editSaving}
           >
-            {editSaving
-              ? <ActivityIndicator size="small" color="#fff" />
-              : <Text style={styles.primaryBtnText}>Сохранить</Text>
-            }
+            <LinearGradient colors={isDark ? EXEC_GRAD_DARK : EXEC_GRAD} start={{x:0,y:0}} end={{x:1,y:1}} style={styles.gradBtnInner}>
+              {editSaving
+                ? <ActivityIndicator size="small" color="#fff" />
+                : <Text style={styles.gradBtnText}>Сохранить</Text>
+              }
+            </LinearGradient>
           </TouchableOpacity>
         </View>
       </ModalShell>
@@ -519,11 +529,13 @@ export default function ExecutorProfileScreen() {
             returnKeyType="done"
           />
           <TouchableOpacity
-            style={styles.primaryBtn}
+            style={styles.gradBtnWrap}
             onPress={() => setReqModalVisible(false)}
             activeOpacity={0.8}
           >
-            <Text style={styles.primaryBtnText}>Сохранить</Text>
+            <LinearGradient colors={isDark ? EXEC_GRAD_DARK : EXEC_GRAD} start={{x:0,y:0}} end={{x:1,y:1}} style={styles.gradBtnInner}>
+              <Text style={styles.gradBtnText}>Сохранить</Text>
+            </LinearGradient>
           </TouchableOpacity>
         </View>
       </ModalShell>
@@ -667,13 +679,8 @@ function makeStyles(C: AppColors, isDark: boolean, R = RADIUS) {
       backgroundColor: C.bgElevated,
     },
     serviceChipText: { fontSize: 13, fontWeight: '600', color: C.textMuted },
-    saveServicesBtn: {
-      backgroundColor: C.executor,
-      borderRadius: R.xl,
-      paddingVertical: 12,
-      alignItems: 'center',
-    },
-    saveServicesBtnText: { color: isDark ? '#0F1F0F' : '#fff', fontWeight: '700', fontSize: 14 },
+    saveServicesBtn: { display: 'none' }, // replaced by gradBtnWrap
+    saveServicesBtnText: { display: 'none' },
 
     // Logout
     logoutBtn: {
@@ -732,20 +739,26 @@ function makeStyles(C: AppColors, isDark: boolean, R = RADIUS) {
       marginBottom: 14,
     },
 
-    // Buttons
-    primaryBtn: {
-      backgroundColor: C.executor,
+    // Gradient buttons
+    gradBtnWrap: {
+      borderRadius: R.xl,
+      marginTop: 4,
+      shadowColor: '#45BFFF',
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.38,
+      shadowRadius: 10,
+      elevation: 6,
+    },
+    gradBtnInner: {
       borderRadius: R.xl,
       paddingVertical: 14,
       alignItems: 'center',
-      marginTop: 4,
-      shadowColor: C.executor,
-      shadowOffset: { width: 0, height: 4 },
-      shadowOpacity: 0.35,
-      shadowRadius: 10,
-      elevation: 8,
+      justifyContent: 'center',
     },
-    primaryBtnText: { color: isDark ? '#0F1F0F' : '#fff', fontWeight: '700', fontSize: 16 },
+    gradBtnText: { color: '#fff', fontWeight: '700', fontSize: 16 },
+    // Legacy (kept for TypeScript, unused)
+    primaryBtn: { borderRadius: R.xl },
+    primaryBtnText: { color: '#fff', fontWeight: '700', fontSize: 16 },
 
     // Radius options
     radiusOption: {

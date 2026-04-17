@@ -14,7 +14,8 @@
     },
     "ios": {
       "supportsTablet": false,
-      "bundleIdentifier": "com.quicky.app"
+      "bundleIdentifier": "com.quicky.app",
+      "usesAppleSignIn": true
     },
     "android": {
       "package": "com.quicky.app",
@@ -53,7 +54,9 @@
         {
           "photosPermission": "Allow Quicky to access your photos."
         }
-      ]
+      ],
+      "expo-web-browser",
+      "expo-apple-authentication"
     ],
     "experiments": {
       "typedRoutes": true

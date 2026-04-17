@@ -9,10 +9,10 @@ import { RADIUS, type AppColors } from '../../src/constants/config';
 import { useAppTheme } from '../../src/hooks/useAppTheme';
 
 export default function RegisterScreen() {
-  const [name, setName] = useState('');
+  const { temp_token, suggested_name } = useLocalSearchParams<{ temp_token: string; suggested_name: string }>();
+  const [name, setName] = useState(suggested_name ?? '');
   const [role, setRole] = useState<'client' | 'executor' | null>(null);
-  const { phone } = useLocalSearchParams<{ phone: string }>();
-  const { register, isLoading } = useAuthStore();
+  const { completeSocialRegistration, isLoading } = useAuthStore();
   const { COLORS, GRADIENTS, isDark, blurTint } = useAppTheme();
   const styles = useMemo(() => makeStyles(COLORS), [COLORS]);
 
@@ -24,8 +24,9 @@ export default function RegisterScreen() {
   const handleRegister = async () => {
     if (!name.trim()) { Alert.alert('Ошибка', 'Введите ваше имя'); return; }
     if (!role)        { Alert.alert('Ошибка', 'Выберите роль');    return; }
+    if (!temp_token)  { Alert.alert('Ошибка', 'Сессия истекла, войдите снова'); return; }
     try {
-      await register(phone, name.trim(), role);
+      await completeSocialRegistration(temp_token, name.trim(), role);
     } catch {
       Alert.alert('Ошибка', 'Не удалось завершить регистрацию. Попробуйте снова.');
     }

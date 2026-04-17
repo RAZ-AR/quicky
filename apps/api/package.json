@@ -21,8 +21,10 @@
     "dotenv": "^17.3.1",
     "fastify": "^5.8.2",
     "fastify-plugin": "^5.1.0",
-    "graphmatch": "^1.0.2",
+    "google-auth-library": "^10.6.2",
+    "graphmatch": "1.0.2",
     "ioredis": "^5.10.1",
+    "jose": "^6.2.2",
     "jsonwebtoken": "^9.0.3",
     "node-fetch": "^3.3.2",
     "openai": "^4.52.0",
@@ -38,5 +40,8 @@
     "tsx": "^4.16.0",
     "typescript": "^5.5.0",
     "vitest": "^2.0.0"
+  },
+  "overrides": {
+    "graphmatch": "1.0.2"
   }
 }

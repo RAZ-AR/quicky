@@ -108,6 +108,7 @@ export interface Task {
   client_id: string;
   executor_id: string | null;
   executor: { name: string; rating_avg: number | null } | null;
+  client?: { name: string; rating_avg?: number | null } | null;
   scheduled_for: string | null;
   expires_at: string | null;
   created_at: string;

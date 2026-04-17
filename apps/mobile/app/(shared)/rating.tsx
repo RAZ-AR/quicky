@@ -85,8 +85,10 @@ export default function RatingScreen() {
                 multiline
                 numberOfLines={3}
                 textAlignVertical="top"
+                maxLength={200}
               />
             </View>
+            <Text style={styles.counter}>{comment.length}/200</Text>
 
             {/* Submit */}
             <TouchableOpacity
@@ -138,6 +140,7 @@ function makeStyles(C: AppColors, C_RADIUS = RADIUS) {
     inputWrap: { borderRadius: C_RADIUS.xl, overflow: 'hidden', marginBottom: 20, width: '100%' },
     inputBg:   { ...StyleSheet.absoluteFillObject, backgroundColor: C.glass, borderRadius: C_RADIUS.xl, borderWidth: 1, borderColor: C.glassBorder },
     textArea:  { padding: 18, fontSize: 15, color: C.text, height: 110, position: 'relative', textAlignVertical: 'top' },
+    counter:   { alignSelf: 'flex-end', color: C.textMuted, fontSize: 12, marginTop: -14, marginBottom: 14 },
 
     submitBtn:  { borderRadius: C_RADIUS.xl, overflow: 'hidden', paddingVertical: 16, alignItems: 'center', width: '100%', marginBottom: 12 },
     submitText: { fontSize: 16, fontWeight: '700', color: '#fff', position: 'relative' },

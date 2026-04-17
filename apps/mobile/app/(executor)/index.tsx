@@ -8,12 +8,86 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuthStore } from '../../src/stores/authStore';
 import { useTaskStore } from '../../src/stores/taskStore';
-import { getSocket } from '../../src/services/socket';
+import { getSocket, getSocketInstance } from '../../src/services/socket';
 import {
   RADIUS, SHADOW, NEO, CATEGORIES, TASK_STATE_LABELS, TASK_STATE_COLORS,
   type AppColors,
 } from '../../src/constants/config';
 import { useAppTheme } from '../../src/hooks/useAppTheme';
+import GradBtn from '../../src/components/GradBtn';
+import { LinearGradient } from 'expo-linear-gradient';
+
+// ── Mock data (fallback когда API недоступен) ──────────────────────────────────
+const MOCK_FEED: any[] = [
+  {
+    id: 'feed-1', state: 'published', category: 'shopping',
+    item_description: 'Купить продукты: хлеб, молоко, творог, яйца в Дикси',
+    from_location: { address: 'Дикси, ул. Садовая, 15' },
+    to_location:   { address: 'ул. Мира, 23, кв. 7' },
+    price_final: 380, payment_method: 'cash',
+    created_at: new Date(Date.now() - 600000).toISOString(),
+  },
+  {
+    id: 'feed-2', state: 'published', category: 'delivery',
+    item_description: 'Доставить документы из офиса в нотариат на Пушкина',
+    from_location: { address: 'БЦ Горизонт, пр. Ленина, 40' },
+    to_location:   { address: 'Нотариус, ул. Пушкина, 12' },
+    price_final: 550, payment_method: 'card',
+    created_at: new Date(Date.now() - 1200000).toISOString(),
+  },
+  {
+    id: 'feed-3', state: 'published', category: 'food',
+    item_description: 'Заказать и привезти суши из Якитории',
+    from_location: { address: 'Якитория, ул. Цветочная, 8' },
+    to_location:   { address: 'пр. Победы, 100, кв. 33' },
+    price_final: 700, payment_method: 'cash',
+    created_at: new Date(Date.now() - 300000).toISOString(),
+  },
+  {
+    id: 'feed-4', state: 'published', category: 'cleaning',
+    item_description: 'Генеральная уборка квартиры 3 комнаты + кухня',
+    from_location: null,
+    to_location:   { address: 'ул. Гагарина, 55, кв. 12' },
+    price_final: 2500, payment_method: 'card',
+    created_at: new Date(Date.now() - 900000).toISOString(),
+  },
+  {
+    id: 'feed-5', state: 'published', category: 'errand',
+    item_description: 'Забрать посылку из Почты России и привезти домой',
+    from_location: { address: 'Почта России, ул. Советская, 1' },
+    to_location:   { address: 'ул. Строителей, 78, кв. 4' },
+    price_final: 420, payment_method: 'cash',
+    created_at: new Date(Date.now() - 1800000).toISOString(),
+  },
+];
+
+const MOCK_MY_TASKS: any[] = [
+  {
+    id: 'my-1', state: 'in_progress', category: 'shopping',
+    item_description: 'Купить продукты: молоко, хлеб, яйца в Пятёрочке',
+    from_location: { address: 'Пятёрочка, ул. Ленина, 10' },
+    to_location:   { address: 'пр. Победы, 45, кв. 12' },
+    price_final: 450, payment_method: 'cash',
+    created_at: new Date(Date.now() - 3600000).toISOString(),
+  },
+  {
+    id: 'my-2', state: 'completed', category: 'delivery',
+    item_description: 'Доставить посылку из СДЭК в офис',
+    from_location: { address: 'СДЭК, ул. Садовая, 23' },
+    to_location:   { address: 'БЦ Альфа, пр. Маркса, 1' },
+    price_final: 600, payment_method: 'card',
+    created_at: new Date(Date.now() - 86400000).toISOString(),
+  },
+  {
+    id: 'my-3', state: 'rated', category: 'cleaning',
+    item_description: 'Клининг квартиры 2 комнаты',
+    from_location: null,
+    to_location:   { address: 'ул. Мира, 15, кв. 8' },
+    price_final: 1800, payment_method: 'card',
+    created_at: new Date(Date.now() - 172800000).toISOString(),
+  },
+];
+// ──────────────────────────────────────────────────────────────────────────────
 
 // ── Step index ─────────────────────────────────────────────────────────────────
 function getStepIndex(state: string): number {
@@ -76,12 +150,13 @@ const dots = StyleSheet.create({
 });
 
 // ── FeedCard component ─────────────────────────────────────────────────────────
-function FeedCard({ task, onPress, onAccept, COLORS, styles }: {
+function FeedCard({ task, onPress, onAccept, COLORS, styles, isDark }: {
   task: any;
   onPress: () => void;
   onAccept: () => void;
   COLORS: AppColors;
   styles: ReturnType<typeof makeStyles>;
+  isDark: boolean;
 }) {
   const cat = CATEGORIES.find(c => c.key === task.category) ?? CATEGORIES[CATEGORIES.length - 1];
   return (
@@ -98,9 +173,7 @@ function FeedCard({ task, onPress, onAccept, COLORS, styles }: {
         </View>
         <Text style={styles.feedPrice}>{task.price_final ?? task.price_suggested ?? '?'} ₽</Text>
       </View>
-      <TouchableOpacity style={[styles.acceptBtn, { backgroundColor: COLORS.executor }]} onPress={onAccept} activeOpacity={0.8}>
-        <Text style={styles.acceptBtnText}>Взять →</Text>
-      </TouchableOpacity>
+      <GradBtn label="Взять →" onPress={onAccept} isDark={isDark} style={styles.acceptBtnWrap} />
     </TouchableOpacity>
   );
 }
@@ -108,7 +181,7 @@ function FeedCard({ task, onPress, onAccept, COLORS, styles }: {
 // ── Main screen ────────────────────────────────────────────────────────────────
 export default function ExecutorHomeScreen() {
   const router = useRouter();
-  const { feed, myTasks, isFeedLoading, loadFeed, loadMyTasks, acceptTask } = useTaskStore();
+  const { feed, myTasks, isFeedLoading, loadFeed, loadMyTasks, acceptTask, setActiveTask } = useTaskStore();
   const { user, token } = useAuthStore();
   const { COLORS, isDark } = useAppTheme();
   const styles = useMemo(() => makeStyles(COLORS, isDark), [COLORS, isDark]);
@@ -120,20 +193,25 @@ export default function ExecutorHomeScreen() {
 
   useEffect(() => {
     fetchAll();
-    if (token) {
-      const socket = getSocket(token);
-      socket.on('task_feed_new', fetchAll);
-      socket.on('task_feed_removed', fetchAll);
-      return () => {
-        socket.off('task_feed_new', fetchAll);
-        socket.off('task_feed_removed', fetchAll);
-      };
-    }
+    // Используем getSocketInstance — socket уже инициализирован в _layout
+    const socket = token ? getSocket(token) : getSocketInstance();
+    if (!socket) return;
+    socket.on('task_feed_new',     fetchAll);
+    socket.on('task_feed_removed', fetchAll);
+    socket.on('task_state_changed', fetchAll);
+    return () => {
+      socket.off('task_feed_new',     fetchAll);
+      socket.off('task_feed_removed', fetchAll);
+      socket.off('task_state_changed', fetchAll);
+    };
   }, [token]);
 
-  const activeTask = myTasks.find(t => ['accepted', 'in_progress', 'pending_client'].includes(t.state));
-  const completedCount = myTasks.filter(t => t.state === 'completed' || t.state === 'rated').length;
-  const totalEarned = myTasks
+  const displayFeed    = feed.length > 0    ? feed    : MOCK_FEED;
+  const displayMyTasks = myTasks.length > 0 ? myTasks : MOCK_MY_TASKS;
+
+  const activeTask = displayMyTasks.find(t => ['accepted', 'in_progress', 'pending_client'].includes(t.state));
+  const completedCount = displayMyTasks.filter(t => t.state === 'completed' || t.state === 'rated').length;
+  const totalEarned = displayMyTasks
     .filter(t => t.state === 'completed' || t.state === 'rated')
     .reduce((sum, t) => sum + (Number((t as any).price_final) || 0), 0);
 
@@ -146,10 +224,13 @@ export default function ExecutorHomeScreen() {
     : null;
 
   const handleAccept = async (taskId: string) => {
+    // Ставим задачу активной (из ленты или мока) до перехода
+    const taskObj = displayFeed.find(t => t.id === taskId);
+    if (taskObj) setActiveTask(taskObj);
     try {
       await acceptTask(taskId);
-      router.push({ pathname: '/(executor)/task/[id]', params: { id: taskId } });
     } catch {}
+    router.push({ pathname: '/(executor)/task/[id]', params: { id: taskId } });
   };
 
   return (
@@ -178,7 +259,7 @@ export default function ExecutorHomeScreen() {
           {/* Stats row */}
           <View style={styles.statsRow}>
             <View style={styles.statCard}>
-              <Text style={[styles.statValue, { color: COLORS.executor }]}>{feed.length}</Text>
+              <Text style={[styles.statValue, { color: COLORS.executor }]}>{displayFeed.length}</Text>
               <Text style={styles.statLabel}>НОВЫХ</Text>
             </View>
             <View style={styles.statDivider} />
@@ -198,37 +279,46 @@ export default function ExecutorHomeScreen() {
           {/* Active task */}
           {activeTask && activeTaskCat ? (
             <TouchableOpacity
-              style={[styles.activeCard, { backgroundColor: isDark ? activeTaskCat.dark + '30' : activeTaskCat.color }]}
-              onPress={() => router.push({ pathname: '/(executor)/task/[id]', params: { id: activeTask.id } })}
+              style={styles.activeCardWrap}
+              onPress={() => { setActiveTask(activeTask); router.push({ pathname: '/(executor)/task/[id]', params: { id: activeTask.id } }); }}
               activeOpacity={0.85}
             >
-              <View style={styles.activeTop}>
-                <Text style={[styles.activeCatLabel, { color: isDark ? COLORS.textMuted : activeTaskCat.textColor + '99' }]}>
-                  В РАБОТЕ
-                </Text>
-                <View style={[styles.stateBadge, { backgroundColor: 'rgba(0,0,0,0.10)' }]}>
-                  <Text style={[styles.stateBadgeText, { color: isDark ? COLORS.text : activeTaskCat.textColor }]}>
-                    {TASK_STATE_LABELS[activeTask.state]}
-                  </Text>
-                </View>
-              </View>
-              <Text
-                style={[styles.activeTitle, { color: isDark ? COLORS.text : activeTaskCat.textColor }]}
-                numberOfLines={2}
+              <LinearGradient
+                colors={isDark
+                  ? ['#3A2A5A', '#2A1E4A', '#1E1A3A'] as const
+                  : ['#EDE0FF', '#D8C8F8', '#C8B8F0'] as const}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.activeCard}
               >
-                {(activeTask as any).item_description ?? 'Задание'}
-              </Text>
-              <StepDots state={activeTask.state} accentColor={isDark ? activeTaskCat.dark : activeTaskCat.textColor} />
-              <View style={styles.activeBottom}>
-                <Text style={[styles.activePrice, { color: isDark ? COLORS.text : activeTaskCat.textColor }]}>
-                  {(activeTask as any).price_final} ₽
-                </Text>
-                <View style={[styles.activeOpenBtn, { backgroundColor: 'rgba(0,0,0,0.10)' }]}>
-                  <Text style={[styles.activeOpenText, { color: isDark ? COLORS.text : activeTaskCat.textColor }]}>
-                    Открыть →
+                <View style={styles.activeTop}>
+                  <Text style={[styles.activeCatLabel, { color: isDark ? '#C8A8FF' : '#7B4FBE' }]}>
+                    В РАБОТЕ
                   </Text>
+                  <View style={[styles.stateBadge, { backgroundColor: isDark ? 'rgba(255,255,255,0.10)' : 'rgba(120,80,200,0.12)' }]}>
+                    <Text style={[styles.stateBadgeText, { color: isDark ? '#D4B8FF' : '#6B3FAF' }]}>
+                      {TASK_STATE_LABELS[activeTask.state]}
+                    </Text>
+                  </View>
                 </View>
-              </View>
+                <Text
+                  style={[styles.activeTitle, { color: isDark ? '#EDE0FF' : '#4A2A80' }]}
+                  numberOfLines={2}
+                >
+                  {(activeTask as any).item_description ?? 'Задание'}
+                </Text>
+                <StepDots state={activeTask.state} accentColor={isDark ? '#C8A8FF' : '#8B5FD0'} />
+                <View style={styles.activeBottom}>
+                  <Text style={[styles.activePrice, { color: isDark ? '#EDE0FF' : '#4A2A80' }]}>
+                    {(activeTask as any).price_final} ₽
+                  </Text>
+                  <View style={[styles.activeOpenBtn, { backgroundColor: isDark ? 'rgba(255,255,255,0.10)' : 'rgba(120,80,200,0.12)' }]}>
+                    <Text style={[styles.activeOpenText, { color: isDark ? '#D4B8FF' : '#6B3FAF' }]}>
+                      Открыть →
+                    </Text>
+                  </View>
+                </View>
+              </LinearGradient>
             </TouchableOpacity>
           ) : (
             <View style={styles.noActiveCard}>
@@ -246,18 +336,19 @@ export default function ExecutorHomeScreen() {
             </TouchableOpacity>
           </View>
 
-          {feed.slice(0, 5).map(task => (
+          {displayFeed.slice(0, 5).map(task => (
             <FeedCard
               key={task.id}
               task={task}
-              onPress={() => router.push({ pathname: '/(executor)/task/[id]', params: { id: task.id } })}
+              onPress={() => { setActiveTask(task); router.push({ pathname: '/(executor)/task/[id]', params: { id: task.id } }); }}
               onAccept={() => handleAccept(task.id)}
               COLORS={COLORS}
               styles={styles}
+              isDark={isDark}
             />
           ))}
 
-          {feed.length === 0 && (
+          {displayFeed.length === 0 && (
             <View style={styles.emptyFeed}>
               <Ionicons name="search-outline" size={48} color={COLORS.textMuted} />
               <Text style={styles.emptyText}>Заданий рядом нет</Text>
@@ -307,9 +398,20 @@ function makeStyles(C: AppColors, isDark: boolean) {
     statLabel:   { fontSize: 10, fontWeight: '700', color: C.textMuted, letterSpacing: 0.8 },
 
     // Active task card
+    activeCardWrap: {
+      borderRadius: RADIUS.xxl,
+      marginBottom: 24,
+      shadowColor: isDark ? '#8B5FD0' : '#9B7FE0',
+      shadowOffset: { width: 0, height: 6 },
+      shadowOpacity: isDark ? 0.35 : 0.28,
+      shadowRadius: 16,
+      elevation: 10,
+    },
     activeCard: {
-      borderRadius: RADIUS.xxl, padding: 20, marginBottom: 24,
-      ...(isDark ? SHADOW.sm : NEO.card),
+      borderRadius: RADIUS.xxl,
+      padding: 20,
+      borderWidth: 1,
+      borderColor: isDark ? 'rgba(200,168,255,0.15)' : 'rgba(255,255,255,0.70)',
     },
     activeTop:      { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 },
     activeCatLabel: { fontSize: 10, fontWeight: '800', letterSpacing: 1.2 },
@@ -364,12 +466,7 @@ function makeStyles(C: AppColors, isDark: boolean) {
     feedMeta:   { fontSize: 12, color: C.textMuted },
     feedPrice:  { fontSize: 16, fontWeight: '800', color: C.text, marginLeft: 8 },
 
-    acceptBtn: {
-      borderRadius: RADIUS.md,
-      paddingVertical: 10,
-      alignItems: 'center',
-    },
-    acceptBtnText: { fontSize: 14, fontWeight: '700', color: '#fff' },
+    acceptBtnWrap: { borderRadius: RADIUS.md },
 
     // Empty
     emptyFeed: { alignItems: 'center', paddingTop: 48 },

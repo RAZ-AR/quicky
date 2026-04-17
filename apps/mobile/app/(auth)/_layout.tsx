@@ -4,8 +4,8 @@ export default function AuthLayout() {
   return (
     <Stack screenOptions={{ headerShown: false }}>
       <Stack.Screen name="login" />
-      <Stack.Screen name="verify" />
       <Stack.Screen name="register" />
+      <Stack.Screen name="verify" options={{ href: null } as any} />
     </Stack>
   );
 }

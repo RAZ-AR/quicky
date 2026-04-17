@@ -11,9 +11,14 @@ export function getSocket(token: string): Socket {
     transports: ['websocket'],
     reconnection: true,
     reconnectionDelay: 1000,
-    reconnectionAttempts: 5,
+    reconnectionAttempts: 10,
   });
 
+  return _socket;
+}
+
+/** Возвращает текущий экземпляр сокета без создания нового */
+export function getSocketInstance(): Socket | null {
   return _socket;
 }
 

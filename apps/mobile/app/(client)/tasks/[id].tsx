@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import {
   View, Text, TouchableOpacity, StyleSheet,
-  ScrollView, Alert, ActivityIndicator, StatusBar,
+  ScrollView, Alert, ActivityIndicator, StatusBar, Image, Share,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
@@ -9,9 +9,11 @@ import { Ionicons } from '@expo/vector-icons';
 import { useTaskStore } from '../../../src/stores/taskStore';
 import { getSocket, joinTaskRoom, leaveTaskRoom } from '../../../src/services/socket';
 import { useAuthStore } from '../../../src/stores/authStore';
+import { api } from '../../../src/services/api';
 import { RADIUS, SHADOW, CATEGORIES, type AppColors } from '../../../src/constants/config';
 import { useAppTheme } from '../../../src/hooks/useAppTheme';
 import { useLang } from '../../../src/hooks/useLang';
+import QRCode from 'qrcode';
 
 // ── Status bar steps ─────────────────────────────────────────────────────────
 function getStepIndex(state: string): number {
@@ -197,6 +199,9 @@ export default function ClientTaskDetailScreen() {
   const { token } = useAuthStore();
   const [isLoading, setIsLoading] = useState(true);
   const [pendingMessage, setPendingMessage] = useState<{ id: string; content: string } | null>(null);
+  const [qrImageUri, setQrImageUri] = useState<string | null>(null);
+  const [qrPayload, setQrPayload] = useState<string | null>(null);
+  const [qrLoading, setQrLoading] = useState(false);
   const { COLORS, isDark } = useAppTheme();
   const { t } = useLang();
   const styles = useMemo(() => makeStyles(COLORS, isDark), [COLORS, isDark]);
@@ -218,7 +223,45 @@ export default function ClientTaskDetailScreen() {
     }
   }, [id]);
 
-  const handleRespond = async (response: string) => {
+  const task = id.startsWith('mock-')
+    ? MOCK_TASKS.find(m => m.id === id)
+    : (activeTask ?? myTasks.find((t: any) => t.id === id));
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const buildQr = async () => {
+      if (!task || ['completed', 'cancelled', 'rated'].includes(task.state)) {
+        setQrPayload(null);
+        setQrImageUri(null);
+        setQrLoading(false);
+        return;
+      }
+      setQrLoading(true);
+      try {
+        const payload = id.startsWith('mock-')
+          ? JSON.stringify({ type: 'quicky_task_completion', task_id: id, token: `demo-${id}` })
+          : (await api.get(`/task/${id}/completion-qr`)).data.payload;
+        const image = await QRCode.toDataURL(payload, { width: 240, margin: 1 });
+        if (!cancelled) {
+          setQrPayload(payload);
+          setQrImageUri(image);
+        }
+      } catch {
+        if (!cancelled) {
+          setQrPayload(null);
+          setQrImageUri(null);
+        }
+      } finally {
+        if (!cancelled) setQrLoading(false);
+      }
+    };
+
+    buildQr();
+    return () => { cancelled = true; };
+  }, [id, task?.state]);
+
+  const handleRespond = async (response: 'accept' | 'reject' | 'select_option') => {
     if (!pendingMessage) return;
     try { await respondToProblem(id, pendingMessage.id, response); setPendingMessage(null); }
     catch { Alert.alert('Ошибка', 'Не удалось отправить ответ'); }
@@ -234,9 +277,16 @@ export default function ClientTaskDetailScreen() {
     ]);
   };
 
-  const task = id.startsWith('mock-')
-    ? MOCK_TASKS.find(m => m.id === id)
-    : (activeTask ?? myTasks.find((t: any) => t.id === id));
+  const handleShareQr = async () => {
+    if (!qrPayload) return;
+    try {
+      await Share.share({
+        title: 'QR подтверждения заказа',
+        message: 'QR подтверждения заказа Quicky',
+        url: qrImageUri ?? undefined,
+      });
+    } catch {}
+  };
 
   if (isLoading) return (
     <View style={[styles.root, { justifyContent: 'center', alignItems: 'center' }]}>
@@ -356,6 +406,34 @@ export default function ClientTaskDetailScreen() {
             </View>
           )}
 
+          {/* Completion QR */}
+          {!['completed', 'cancelled', 'rated'].includes(task.state) && (
+            <View style={styles.card}>
+              <Text style={styles.cardLabel}>QR подтверждения</Text>
+              <Text style={styles.qrText}>
+                Покажите этот код исполнителю при передаче заказа. Сканирование завершит задачу и откроет оценки.
+              </Text>
+              <View style={styles.qrBox}>
+                {qrLoading ? (
+                  <ActivityIndicator color={COLORS.primary} />
+                ) : qrImageUri ? (
+                  <Image source={{ uri: qrImageUri }} style={styles.qrImage} />
+                ) : (
+                  <Text style={styles.qrError}>Не удалось загрузить QR</Text>
+                )}
+              </View>
+              {qrPayload && (
+                <TouchableOpacity
+                  style={[styles.qrShareBtn, { backgroundColor: COLORS.primaryGlow, borderColor: COLORS.primary + '40' }]}
+                  onPress={handleShareQr}
+                  activeOpacity={0.8}
+                >
+                  <Text style={[styles.qrShareText, { color: COLORS.primary }]}>Отправить QR</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+          )}
+
           {/* Problem from executor */}
           {hasProblem && pendingMessage && (
             <View style={[styles.card, { borderWidth: 1, borderColor: COLORS.warning + '60' }]}>
@@ -456,5 +534,27 @@ function makeStyles(C: AppColors, isDark: boolean, R = RADIUS) {
     rateBtnText: { fontSize: 15, fontWeight: '700', color: '#fff' },
     cancelBtn:   { borderRadius: R.xl, paddingVertical: 14, alignItems: 'center' },
     cancelBtnText:{ fontSize: 14, fontWeight: '600' },
+
+    // QR
+    qrText: { fontSize: 14, color: C.textMuted, lineHeight: 20, marginBottom: 14 },
+    qrBox: {
+      alignSelf: 'center',
+      width: 232,
+      height: 232,
+      borderRadius: R.lg,
+      backgroundColor: '#fff',
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginBottom: 14,
+    },
+    qrImage: { width: 220, height: 220 },
+    qrError: { fontSize: 13, color: C.textMuted },
+    qrShareBtn: {
+      borderRadius: R.lg,
+      borderWidth: 1,
+      paddingVertical: 13,
+      alignItems: 'center',
+    },
+    qrShareText: { fontSize: 14, fontWeight: '700' },
   });
 }

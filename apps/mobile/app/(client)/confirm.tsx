@@ -39,7 +39,7 @@ export default function ConfirmScreen() {
     }
   };
 
-  const handleCancel = () => { resetCreation(); router.replace('/(client)/'); };
+  const handleCancel = () => { resetCreation(); router.replace('/(client)'); };
 
   return (
     <View style={styles.root}>

@@ -11,11 +11,13 @@ const TASK_ID    = '550e8400-e29b-41d4-a716-446655440001';
 const CLIENT_ID  = '550e8400-e29b-41d4-a716-446655440002';
 const EXEC_ID    = '550e8400-e29b-41d4-a716-446655440003';
 const MSG_ID     = '550e8400-e29b-41d4-a716-446655440004';
+const QR_TOKEN   = 'qr-token-1234567890';
 
 // ─── Базовые моки задания ─────────────────────────────────────────────────────
 
 const baseTask = {
   id: TASK_ID, clientId: CLIENT_ID, executorId: EXEC_ID,
+  completionQrToken: QR_TOKEN,
   state: 'in_progress', category: 'buy_deliver', title: 'Купить кофе',
   itemDescription: 'Латте', fromAddress: null, fromLat: null, fromLng: null,
   toAddress: 'Блок 45', toLat: 44.81, toLng: 20.46,
@@ -41,6 +43,7 @@ const prismaMock = {
     update:     vi.fn().mockResolvedValue({}),
   },
   rating: {
+    findFirst: vi.fn().mockResolvedValue(null),
     create:    vi.fn().mockResolvedValue({ id: 'rating-id' }),
     aggregate: vi.fn().mockResolvedValue({ _avg: { stars: 4.5 }, _count: { stars: 5 } }),
     count:     vi.fn().mockResolvedValue(2),
@@ -239,7 +242,48 @@ describe('POST /task/:id/respond', () => {
   });
 });
 
-// ─── complete ─────────────────────────────────────────────────────────────────
+// ─── completion QR ────────────────────────────────────────────────────────────
+
+describe('GET /task/:id/completion-qr', () => {
+  let app: Awaited<ReturnType<typeof buildApp>>;
+
+  beforeEach(async () => {
+    vi.clearAllMocks();
+    prismaMock.task.findUnique.mockResolvedValue({
+      ...baseTask,
+      state: 'in_progress',
+      client: baseTask.client,
+      executor: baseTask.executor,
+    });
+    app = await buildApp();
+  });
+
+  it('200 заказчик получает payload для QR', async () => {
+    const res = await app.inject({
+      method: 'GET', url: `/task/${TASK_ID}/completion-qr`,
+      headers: { authorization: `Bearer ${clientToken()}` },
+    });
+
+    expect(res.statusCode).toBe(200);
+    const body = res.json();
+    expect(body.task_id).toBe(TASK_ID);
+    expect(body.token).toBe(QR_TOKEN);
+    expect(JSON.parse(body.payload)).toEqual({
+      type: 'quicky_task_completion',
+      task_id: TASK_ID,
+      token: QR_TOKEN,
+    });
+  });
+
+  it('403 исполнитель не может получить QR заказчика', async () => {
+    const res = await app.inject({
+      method: 'GET', url: `/task/${TASK_ID}/completion-qr`,
+      headers: { authorization: `Bearer ${executorToken()}` },
+    });
+
+    expect(res.statusCode).toBe(403);
+  });
+});
 
 describe('POST /task/:id/complete', () => {
   let app: Awaited<ReturnType<typeof buildApp>>;
@@ -251,22 +295,71 @@ describe('POST /task/:id/complete', () => {
     app = await buildApp();
   });
 
-  it('200 исполнитель завершает задание', async () => {
+  it('410 прямое завершение выключено', async () => {
     const res = await app.inject({
       method: 'POST', url: `/task/${TASK_ID}/complete`,
       headers: { authorization: `Bearer ${executorToken()}` },
       payload: {},
     });
-    expect(res.statusCode).toBe(200);
-    expect(res.json().state).toBe('completed');
+
+    expect(res.statusCode).toBe(410);
   });
 
-  it('403 клиент не может завершить', async () => {
+  it('410 клиент тоже не может завершить без QR', async () => {
     const res = await app.inject({
       method: 'POST', url: `/task/${TASK_ID}/complete`,
       headers: { authorization: `Bearer ${clientToken()}` },
       payload: {},
     });
+
+    expect(res.statusCode).toBe(410);
+  });
+});
+
+describe('POST /task/:id/complete-qr', () => {
+  let app: Awaited<ReturnType<typeof buildApp>>;
+
+  beforeEach(async () => {
+    vi.clearAllMocks();
+    prismaMock.task.findUnique.mockResolvedValue({
+      ...baseTask,
+      state: 'in_progress',
+      client: baseTask.client,
+      executor: baseTask.executor,
+    });
+    prismaMock.task.findUniqueOrThrow.mockResolvedValue({ ...baseTask, state: 'in_progress' });
+    app = await buildApp();
+  });
+
+  it('200 исполнитель завершает задание после сканирования QR', async () => {
+    const res = await app.inject({
+      method: 'POST', url: `/task/${TASK_ID}/complete-qr`,
+      headers: { authorization: `Bearer ${executorToken()}` },
+      payload: { token: QR_TOKEN },
+    });
+
+    expect(res.statusCode).toBe(200);
+    expect(res.json().state).toBe('completed');
+    expect(res.json().confirmed_by).toBe('qr');
+  });
+
+  it('403 отклоняет неправильный QR токен', async () => {
+    const res = await app.inject({
+      method: 'POST', url: `/task/${TASK_ID}/complete-qr`,
+      headers: { authorization: `Bearer ${executorToken()}` },
+      payload: { token: 'wrong-token-123456' },
+    });
+
+    expect(res.statusCode).toBe(403);
+  });
+
+  it('403 клиент не может подтвердить выполнение QR кодом', async () => {
+    const res = await app.inject({
+      method: 'POST', url: `/task/${TASK_ID}/complete-qr`,
+      headers: { authorization: `Bearer ${clientToken()}` },
+      payload: { token: QR_TOKEN },
+    });
+
     expect(res.statusCode).toBe(403);
   });
 });
@@ -321,6 +414,7 @@ describe('POST /rating', () => {
     vi.clearAllMocks();
     prismaMock.task.findUnique.mockResolvedValue({ ...baseTask, state: 'completed' });
     prismaMock.task.findUniqueOrThrow.mockResolvedValue({ ...baseTask, state: 'completed' });
+    prismaMock.rating.findFirst.mockResolvedValue(null);
     app = await buildApp();
   });
 
@@ -342,6 +436,32 @@ describe('POST /rating', () => {
       payload: { task_id: TASK_ID, ratee_id: EXEC_ID, stars: 6 },
     });
     expect(res.statusCode).toBe(400);
+  });
+
+  it('403 нельзя подменить пользователя для оценки', async () => {
+    const res = await app.inject({
+      method: 'POST', url: '/rating',
+      headers: { authorization: `Bearer ${clientToken()}` },
+      payload: {
+        task_id: TASK_ID,
+        ratee_id: '550e8400-e29b-41d4-a716-446655440099',
+        stars: 5,
+      },
+    });
+
+    expect(res.statusCode).toBe(403);
+  });
+
+  it('409 нельзя оставить оценку дважды', async () => {
+    prismaMock.rating.findFirst.mockResolvedValueOnce({ id: 'existing-rating' });
+
+    const res = await app.inject({
+      method: 'POST', url: '/rating',
+      headers: { authorization: `Bearer ${clientToken()}` },
+      payload: { task_id: TASK_ID, ratee_id: EXEC_ID, stars: 5 },
+    });
+
+    expect(res.statusCode).toBe(409);
   });
 });
 

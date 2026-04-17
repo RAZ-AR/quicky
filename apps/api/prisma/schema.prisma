@@ -80,8 +80,14 @@ enum PaymentStatus {
 
 model User {
   id                String    @id @default(uuid())
-  phone             String    @unique
+  phone             String?   @unique
   name              String
+
+  // Social auth
+  googleId          String?   @unique
+  appleId           String?   @unique
+  telegramId        BigInt?   @unique
+  avatarFromSocial  String?
   role              UserRole  @default(client)
   avatarUrl         String?
   pushToken         String?
@@ -138,6 +144,7 @@ model Task {
   expiresAt    DateTime?
 
   state TaskState @default(draft)
+  completionQrToken String @unique @default(dbgenerated("md5((random())::text || (clock_timestamp())::text)"))
 
   clarificationStep Int  @default(0)
   clarificationData Json @default("[]")

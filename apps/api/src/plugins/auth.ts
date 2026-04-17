@@ -7,7 +7,7 @@ import type { FastifyPluginAsync, FastifyRequest, FastifyReply } from 'fastify';
 export interface JwtPayload {
   userId: string;
   role: 'client' | 'executor' | 'admin';
-  phone: string;
+  phone?: string;
 }
 
 declare module '@fastify/jwt' {

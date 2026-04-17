@@ -11,8 +11,11 @@ import { useAppTheme } from '../../src/hooks/useAppTheme';
 export default function VerifyScreen() {
   const [code, setCode] = useState('');
   const { phone } = useLocalSearchParams<{ phone: string }>();
-  const { verifyOtp, isLoading } = useAuthStore();
+  const { isLoading } = useAuthStore();
   const router = useRouter();
+
+  // Экран OTP скрыт (href: null) — оставлен для совместимости
+  const verifyOtp = async (_phone: string, _code: string) => ({ is_new_user: false });
   const { COLORS, GRADIENTS, isDark, blurTint } = useAppTheme();
   const styles = useMemo(() => makeStyles(COLORS), [COLORS]);
 
