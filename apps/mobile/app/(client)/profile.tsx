@@ -9,7 +9,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { api } from '../../src/services/api';
 import { useAuthStore } from '../../src/stores/authStore';
 import { useTaskStore } from '../../src/stores/taskStore';
-import { RADIUS, SHADOW, type AppColors } from '../../src/constants/config';
+import { RADIUS, SHADOW, NEO, type AppColors } from '../../src/constants/config';
 import { useEffect, useMemo, useState, useCallback } from 'react';
 import { useAppTheme } from '../../src/hooks/useAppTheme';
 import { useLang } from '../../src/hooks/useLang';
@@ -667,7 +667,8 @@ function makeStyles(C: AppColors, isDark: boolean, R = RADIUS) {
     profileCard: {
       flexDirection: 'row', alignItems: 'center', gap: 14,
       backgroundColor: C.bgLayer, borderRadius: R.xl,
-      padding: 16, marginBottom: 12, ...SHADOW.sm,
+      padding: 16, marginBottom: 12,
+      ...(isDark ? SHADOW.sm : NEO.card),
     },
     avatar: {
       width: 60, height: 60, borderRadius: 30,
@@ -696,7 +697,7 @@ function makeStyles(C: AppColors, isDark: boolean, R = RADIUS) {
       flex: 1, borderRadius: R.lg,
       backgroundColor: C.bgLayer,
       paddingVertical: 12, alignItems: 'center',
-      ...SHADOW.sm,
+      ...(isDark ? SHADOW.sm : NEO.btn),
     },
     statValue: { fontSize: 18, fontWeight: '800', marginBottom: 2 },
     statLabel: { fontSize: 9, color: C.textMuted, fontWeight: '600', textTransform: 'uppercase', textAlign: 'center' },
@@ -713,8 +714,8 @@ function makeStyles(C: AppColors, isDark: boolean, R = RADIUS) {
       backgroundColor: C.bgLayer,
       borderRadius: R.xl,
       marginBottom: 20,
-      overflow: 'hidden',
-      ...SHADOW.sm,
+      overflow: isDark ? 'hidden' : 'visible',
+      ...(isDark ? SHADOW.sm : NEO.card),
     },
 
     // Menu row
@@ -724,7 +725,7 @@ function makeStyles(C: AppColors, isDark: boolean, R = RADIUS) {
     },
     menuIconWrap: {
       width: 34, height: 34, borderRadius: 10,
-      backgroundColor: C.primaryGlow,
+      backgroundColor: isDark ? C.primaryGlow : 'rgba(255,107,46,0.15)',
       alignItems: 'center', justifyContent: 'center',
     },
     menuLabel:   { fontSize: 15, color: C.text, fontWeight: '500' },
@@ -746,9 +747,9 @@ function makeStyles(C: AppColors, isDark: boolean, R = RADIUS) {
       flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
       gap: 8,
       borderRadius: R.xl,
-      backgroundColor: C.dangerGlow,
-      borderWidth: 1, borderColor: C.danger + '25',
+      backgroundColor: isDark ? C.dangerGlow : 'rgba(255,59,48,0.08)',
       paddingVertical: 15, marginBottom: 8,
+      ...(isDark ? { borderWidth: 1, borderColor: C.danger + '25' } : NEO.btn),
     },
     logoutText: { color: C.danger, fontWeight: '700', fontSize: 15 },
 

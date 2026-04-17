@@ -134,6 +134,10 @@ export function FloatingTabBar({
 
 const s = StyleSheet.create({
   root: {
+    position:        'absolute',
+    bottom:          0,
+    left:            0,
+    right:           0,
     alignItems:      'center',
     justifyContent:  'flex-end',
     backgroundColor: 'transparent',
@@ -160,7 +164,7 @@ const s = StyleSheet.create({
   },
   glassOverlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(255,255,255,0.38)',
+    backgroundColor: 'rgba(255,255,255,0.45)',
   },
   specular: {
     position:        'absolute',

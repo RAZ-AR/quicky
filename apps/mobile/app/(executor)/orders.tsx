@@ -1,223 +1,290 @@
 import { useEffect, useState, useMemo } from 'react';
-import { View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator, RefreshControl, StatusBar } from 'react-native';
+import {
+  View, Text, FlatList, TouchableOpacity, StyleSheet,
+  StatusBar, RefreshControl, ScrollView,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import * as Location from 'expo-location';
-import { LinearGradient } from 'expo-linear-gradient';
-import { BlurView } from 'expo-blur';
+import { Ionicons } from '@expo/vector-icons';
 import { useTaskStore } from '../../src/stores/taskStore';
-import { getSocket } from '../../src/services/socket';
 import { useAuthStore } from '../../src/stores/authStore';
-import { RADIUS, TASK_STATE_COLORS, TASK_STATE_LABELS, type AppColors } from '../../src/constants/config';
+import {
+  RADIUS, SHADOW, NEO, CATEGORIES, TASK_STATE_COLORS, TASK_STATE_LABELS,
+  type AppColors,
+} from '../../src/constants/config';
 import { useAppTheme } from '../../src/hooks/useAppTheme';
-import type { Task } from '../../src/services/api';
 
-const CATEGORIES: Record<string, string> = {
-  buy_deliver:   'Купи-привези',
-  pickup_drop:   'Забери-отвези',
-  simple_errand: 'Поручение',
-};
+// ── OrderCard ─────────────────────────────────────────────────────────────────
+function OrderCard({ task, isNew, onPress, onAccept, COLORS, styles }: {
+  task: any;
+  isNew: boolean;
+  onPress: () => void;
+  onAccept?: () => void;
+  COLORS: AppColors;
+  styles: ReturnType<typeof makeStyles>;
+}) {
+  const cat = CATEGORIES.find(c => c.key === task.category) ?? CATEGORIES[CATEGORIES.length - 1];
+  const stateLabel = TASK_STATE_LABELS[task.state] ?? task.state;
+  const stateColor = TASK_STATE_COLORS[task.state] ?? COLORS.textMuted;
 
-export default function ExecutorOrdersScreen() {
-  const router = useRouter();
-  const { feed, isFeedLoading, loadFeed, myTasks, loadMyTasks } = useTaskStore();
-  const { token } = useAuthStore();
-  const [tab, setTab] = useState<'feed' | 'mine'>('feed');
-  const { COLORS, GRADIENTS, isDark, blurTint } = useAppTheme();
-  const styles = useMemo(() => makeStyles(COLORS), [COLORS]);
-
-  const fetchFeed = async () => {
-    loadMyTasks();
-    let lat = 44.8176, lng = 20.4569;
-    try {
-      const { status } = await Location.requestForegroundPermissionsAsync();
-      if (status === 'granted') {
-        const loc = await Location.getCurrentPositionAsync({});
-        lat = loc.coords.latitude; lng = loc.coords.longitude;
-      }
-    } catch {}
-    await loadFeed(lat, lng);
-  };
-
-  useEffect(() => {
-    fetchFeed();
-    if (token) {
-      const socket = getSocket(token);
-      socket.on('task_feed_new',     fetchFeed);
-      socket.on('task_feed_removed', fetchFeed);
-      return () => { socket.off('task_feed_new', fetchFeed); socket.off('task_feed_removed', fetchFeed); };
-    }
-  }, [token]);
-
-  const activeOrders = myTasks.filter(t => ['accepted', 'in_progress', 'pending_client'].includes(t.state));
-  const data    = tab === 'feed' ? feed : activeOrders;
-  const isEmpty = data.length === 0 && !isFeedLoading;
-
-  const renderFeedItem = ({ item }: { item: Task }) => (
-    <TouchableOpacity
-      style={styles.card}
-      onPress={() => router.push({ pathname: '/(executor)/task/[id]', params: { id: item.id } })}
-      activeOpacity={0.85}
-    >
-      <BlurView intensity={18} tint={blurTint} style={StyleSheet.absoluteFill} />
-      <View style={styles.cardBg} />
-      {/* Cyan left accent */}
-      <View style={styles.cardAccent} />
-      <View style={{ position: 'relative', padding: 16 }}>
-        <View style={styles.cardHeader}>
-          <View style={styles.cardLeft}>
-            <Text style={styles.cardTitle} numberOfLines={2}>{item.item_description ?? 'Заказ'}</Text>
-            <Text style={styles.cardAddr} numberOfLines={1}>📍 {item.to_location?.address ?? '—'}</Text>
-            {item.from_location && <Text style={styles.cardFrom} numberOfLines={1}>🏪 {item.from_location.address}</Text>}
-          </View>
-          <View style={styles.cardRight}>
-            <Text style={styles.cardPrice}>{item.price_final} ₽</Text>
-            <View style={styles.categoryPill}>
-              <Text style={styles.categoryText}>{CATEGORIES[item.category ?? ''] ?? item.category}</Text>
-            </View>
-          </View>
+  return (
+    <TouchableOpacity style={[styles.card, { borderLeftColor: cat.dark }]} onPress={onPress} activeOpacity={0.8}>
+      <View style={styles.cardTop}>
+        <View style={[styles.iconChip, { backgroundColor: cat.dark + '22' }]}>
+          <Ionicons name={cat.icon as any} size={16} color={cat.dark} />
         </View>
+        <View style={styles.cardMeta}>
+          <Text style={styles.cardTitle} numberOfLines={2}>{task.item_description ?? 'Задание'}</Text>
+          <Text style={styles.cardSub}>
+            {cat.label}{task.price_final ? ` · ${task.price_final} ₽` : ''}
+          </Text>
+        </View>
+        {isNew && (
+          <Text style={styles.cardPrice}>{task.price_final ?? task.price_suggested ?? '?'} ₽</Text>
+        )}
+      </View>
+
+      <View style={styles.cardBottom}>
+        {!isNew && (
+          <View style={[styles.badge, { backgroundColor: stateColor + '20' }]}>
+            <Text style={[styles.badgeText, { color: stateColor }]}>{stateLabel}</Text>
+          </View>
+        )}
+        {task.to_location?.address && (
+          <View style={styles.addrRow}>
+            <Ionicons name="location-outline" size={11} color={COLORS.textLight} />
+            <Text style={styles.addrText} numberOfLines={1}>{task.to_location.address}</Text>
+          </View>
+        )}
+        {isNew && onAccept && (
+          <TouchableOpacity style={[styles.acceptBtn, { backgroundColor: COLORS.executor }]} onPress={onAccept} activeOpacity={0.8}>
+            <Text style={styles.acceptBtnText}>Взять</Text>
+          </TouchableOpacity>
+        )}
       </View>
     </TouchableOpacity>
   );
+}
 
-  const renderMyItem = ({ item }: { item: Task }) => {
-    const stateColor = TASK_STATE_COLORS[item.state] ?? COLORS.executor;
-    return (
-      <TouchableOpacity
-        style={styles.card}
-        onPress={() => router.push({ pathname: '/(executor)/task/[id]', params: { id: item.id } })}
-        activeOpacity={0.85}
-      >
-        <BlurView intensity={18} tint={blurTint} style={StyleSheet.absoluteFill} />
-        <View style={styles.cardBg} />
-        <View style={[styles.cardAccent, { backgroundColor: stateColor }]} />
-        <View style={{ position: 'relative', padding: 16 }}>
-          <View style={styles.cardHeader}>
-            <View style={styles.cardLeft}>
-              <Text style={styles.cardTitle} numberOfLines={2}>{item.item_description ?? 'Заказ'}</Text>
-              <Text style={styles.cardAddr} numberOfLines={1}>📍 {item.to_location?.address ?? '—'}</Text>
-            </View>
-            <View style={styles.cardRight}>
-              <Text style={[styles.cardPrice, { color: stateColor }]}>{item.price_final ?? '—'} ₽</Text>
-              <View style={[styles.stateBadge, { backgroundColor: stateColor + '20', borderColor: stateColor + '40' }]}>
-                <Text style={[styles.stateBadgeText, { color: stateColor }]}>{TASK_STATE_LABELS[item.state]}</Text>
-              </View>
-            </View>
-          </View>
-        </View>
-      </TouchableOpacity>
-    );
+// ── Main screen ────────────────────────────────────────────────────────────────
+export default function ExecutorOrdersScreen() {
+  const [segment, setSegment] = useState<'new' | 'my'>('new');
+  const [catFilter, setCatFilter] = useState<string>('all');
+  const { feed, myTasks, isFeedLoading, isLoading, loadFeed, loadMyTasks, acceptTask } = useTaskStore();
+  const { token } = useAuthStore();
+  const { COLORS, isDark } = useAppTheme();
+  const styles = useMemo(() => makeStyles(COLORS, isDark), [COLORS, isDark]);
+  const router = useRouter();
+
+  const refresh = async () => {
+    await Promise.all([loadFeed(55.7558, 37.6176), loadMyTasks()]);
   };
+
+  useEffect(() => { refresh(); }, []);
+
+  const displayData = segment === 'new'
+    ? (catFilter === 'all' ? feed : feed.filter(t => (t as any).category === catFilter))
+    : (catFilter === 'all' ? myTasks : myTasks.filter(t => (t as any).category === catFilter));
+
+  const CATS = [
+    { key: 'all', label: 'Все', icon: 'apps-outline', dark: COLORS.textMuted },
+    ...CATEGORIES,
+  ] as const;
 
   return (
     <View style={styles.root}>
       <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
-      <LinearGradient colors={GRADIENTS.bg} style={StyleSheet.absoluteFill} />
-      <View style={styles.glowTop} />
-
       <SafeAreaView style={styles.safe} edges={['top']}>
+
         {/* Header */}
         <View style={styles.header}>
-          <Text style={styles.title}>Заказы</Text>
-          <View style={styles.countBadge}>
-            <LinearGradient colors={GRADIENTS.executor} style={StyleSheet.absoluteFill} />
-            <Text style={styles.countText}>{data.length}</Text>
-          </View>
+          <Text style={styles.title}>Задания</Text>
         </View>
 
-        {/* Tabs */}
-        <View style={styles.tabsWrap}>
-          <BlurView intensity={20} tint={blurTint} style={StyleSheet.absoluteFill} />
-          <View style={styles.tabsBg} />
-          <View style={{ position: 'relative', flexDirection: 'row', padding: 4 }}>
-            {(['feed', 'mine'] as const).map((t) => (
-              <TouchableOpacity
-                key={t}
-                style={[styles.tabBtn, tab === t && styles.tabBtnActive]}
-                onPress={() => setTab(t)}
-                activeOpacity={0.8}
-              >
-                {tab === t && <LinearGradient colors={GRADIENTS.executor} style={StyleSheet.absoluteFill} />}
-                <Text style={[styles.tabText, tab === t && styles.tabTextActive]}>
-                  {t === 'feed' ? 'Новые' : `Мои${activeOrders.length > 0 ? ` (${activeOrders.length})` : ''}`}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
+        {/* Segment: Новые / Мои */}
+        <View style={styles.segmentRow}>
+          {(['new', 'my'] as const).map(seg => (
+            <TouchableOpacity
+              key={seg}
+              style={[styles.segBtn, segment === seg && styles.segBtnActive]}
+              onPress={() => setSegment(seg)}
+              activeOpacity={0.8}
+            >
+              <Text style={[styles.segText, segment === seg && styles.segTextActive]}>
+                {seg === 'new'
+                  ? `Новые${feed.length > 0 ? ` (${feed.length})` : ''}`
+                  : 'Мои задания'}
+              </Text>
+            </TouchableOpacity>
+          ))}
         </View>
 
-        {isFeedLoading && data.length === 0 ? (
-          <ActivityIndicator size="large" color={COLORS.executor} style={{ marginTop: 60 }} />
-        ) : (
-          <FlatList
-            data={data}
-            keyExtractor={t => t.id}
-            renderItem={tab === 'feed' ? renderFeedItem : renderMyItem}
-            contentContainerStyle={styles.list}
-            showsVerticalScrollIndicator={false}
-            refreshControl={
-              <RefreshControl refreshing={isFeedLoading} onRefresh={fetchFeed} tintColor={COLORS.executor} />
-            }
-            ListEmptyComponent={isEmpty ? (
-              <View style={styles.empty}>
-                <Text style={styles.emptyIcon}>{tab === 'feed' ? '🔍' : '📋'}</Text>
-                <Text style={styles.emptyText}>{tab === 'feed' ? 'Заказов рядом нет' : 'Нет активных заказов'}</Text>
-                <Text style={styles.emptyHint}>{tab === 'feed' ? 'Попробуйте позже или расширьте зону' : 'Примите заказ во вкладке Новые'}</Text>
-              </View>
-            ) : null}
-          />
-        )}
+        {/* Category filter chips */}
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          style={styles.catScroll}
+          contentContainerStyle={styles.catContent}
+        >
+          {CATS.map(cat => (
+            <TouchableOpacity
+              key={cat.key}
+              style={[
+                styles.catChip,
+                catFilter === cat.key && { backgroundColor: COLORS.executor + '22', borderColor: COLORS.executor },
+              ]}
+              onPress={() => setCatFilter(cat.key)}
+              activeOpacity={0.8}
+            >
+              <Ionicons
+                name={cat.icon as any}
+                size={13}
+                color={catFilter === cat.key ? COLORS.executor : COLORS.textMuted}
+              />
+              <Text style={[styles.catLabel, catFilter === cat.key && { color: COLORS.executor, fontWeight: '700' }]}>
+                {cat.label}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+
+        {/* List */}
+        <FlatList
+          data={displayData as any[]}
+          keyExtractor={t => t.id}
+          renderItem={({ item }) => (
+            <OrderCard
+              task={item}
+              isNew={segment === 'new'}
+              onPress={() => router.push({ pathname: '/(executor)/task/[id]', params: { id: item.id } })}
+              onAccept={segment === 'new' ? async () => {
+                try {
+                  await acceptTask(item.id);
+                  router.push({ pathname: '/(executor)/task/[id]', params: { id: item.id } });
+                } catch {}
+              } : undefined}
+              COLORS={COLORS}
+              styles={styles}
+            />
+          )}
+          contentContainerStyle={styles.list}
+          showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl
+              refreshing={isFeedLoading || isLoading}
+              onRefresh={refresh}
+              tintColor={COLORS.executor}
+            />
+          }
+          ListEmptyComponent={
+            <View style={styles.empty}>
+              <Ionicons name="search-outline" size={52} color={COLORS.textMuted} />
+              <Text style={styles.emptyText}>
+                {segment === 'new' ? 'Нет доступных заданий' : 'Нет активных заданий'}
+              </Text>
+            </View>
+          }
+        />
       </SafeAreaView>
     </View>
   );
 }
 
-function makeStyles(C: AppColors, C_RADIUS = RADIUS) {
+// ── Styles ─────────────────────────────────────────────────────────────────────
+function makeStyles(C: AppColors, isDark: boolean) {
   return StyleSheet.create({
     root: { flex: 1, backgroundColor: C.bg },
     safe: { flex: 1 },
-    glowTop: {
-      position: 'absolute', top: -60, right: -40,
-      width: 200, height: 200, borderRadius: 100,
-      backgroundColor: 'rgba(6,182,212,0.12)',
+
+    // Header
+    header: {
+      flexDirection: 'row', alignItems: 'center',
+      paddingHorizontal: 20, paddingTop: 8, paddingBottom: 12,
     },
+    title: { flex: 1, fontSize: 28, fontWeight: '800', color: C.text, letterSpacing: -0.6 },
 
-    header:     { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingTop: 8, paddingBottom: 12 },
-    title:      { flex: 1, fontSize: 24, fontWeight: '800', color: C.text },
-    countBadge: { borderRadius: C_RADIUS.full, overflow: 'hidden', paddingHorizontal: 12, paddingVertical: 5, minWidth: 34, alignItems: 'center' },
-    countText:  { color: '#fff', fontSize: 14, fontWeight: '700', position: 'relative' },
+    // Segment
+    segmentRow: {
+      flexDirection: 'row',
+      marginHorizontal: 20,
+      marginBottom: 12,
+      backgroundColor: C.bgLayer,
+      borderRadius: RADIUS.xl,
+      padding: 4,
+      gap: 4,
+      ...(isDark ? SHADOW.sm : NEO.card),
+    },
+    segBtn: {
+      flex: 1,
+      paddingVertical: 10,
+      alignItems: 'center',
+      borderRadius: RADIUS.lg,
+    },
+    segBtnActive: {
+      backgroundColor: C.executor,
+      ...(isDark ? SHADOW.sm : NEO.btn),
+    },
+    segText: { fontSize: 14, fontWeight: '600', color: C.textMuted },
+    segTextActive: { color: '#fff', fontWeight: '700' },
 
-    tabsWrap: { marginHorizontal: 20, borderRadius: C_RADIUS.lg, overflow: 'hidden', marginBottom: 12 },
-    tabsBg:   { ...StyleSheet.absoluteFillObject, backgroundColor: C.glass, borderRadius: C_RADIUS.lg, borderWidth: 1, borderColor: C.glassBorder },
-    tabBtn:   { flex: 1, paddingVertical: 11, alignItems: 'center', borderRadius: C_RADIUS.md, overflow: 'hidden' },
-    tabBtnActive: {},
-    tabText:      { fontSize: 14, fontWeight: '600', color: C.textMuted, position: 'relative' },
-    tabTextActive:{ color: '#fff' },
+    // Category scroll
+    catScroll:   { flexGrow: 0, marginBottom: 10 },
+    catContent:  { paddingHorizontal: 20, gap: 8 },
+    catChip: {
+      flexDirection: 'row', alignItems: 'center', gap: 5,
+      paddingHorizontal: 12, paddingVertical: 7,
+      borderRadius: RADIUS.full,
+      borderWidth: 1.5, borderColor: C.border,
+      backgroundColor: C.bgLayer,
+    },
+    catLabel: { fontSize: 12, fontWeight: '600', color: C.textMuted },
 
-    list: { paddingHorizontal: 16, paddingBottom: 100 },
+    // List
+    list: { paddingHorizontal: 20, paddingBottom: 120 },
 
-    card:     { borderRadius: C_RADIUS.xl, overflow: 'hidden', marginBottom: 10 },
-    cardBg:   { ...StyleSheet.absoluteFillObject, backgroundColor: C.glass, borderRadius: C_RADIUS.xl, borderWidth: 1, borderColor: C.glassBorder },
-    cardAccent: { position: 'absolute', left: 0, top: 16, bottom: 16, width: 3, borderRadius: 2, backgroundColor: C.executor },
+    // Card
+    card: {
+      backgroundColor: C.bgLayer,
+      borderRadius: 16,
+      borderLeftWidth: 4,
+      borderLeftColor: 'transparent',
+      marginBottom: 10,
+      padding: 14,
+      gap: 8,
+      ...(isDark ? SHADOW.sm : {
+        shadowColor: '#9BA3BC',
+        shadowOffset: { width: 5, height: 5 },
+        shadowOpacity: 0.40,
+        shadowRadius: 10,
+        elevation: 8,
+      }),
+    },
+    cardTop: { flexDirection: 'row', alignItems: 'flex-start', gap: 10 },
+    iconChip: {
+      width: 36, height: 36, borderRadius: 10,
+      alignItems: 'center', justifyContent: 'center',
+    },
+    cardMeta:  { flex: 1 },
+    cardTitle: { fontSize: 14, fontWeight: '700', color: C.text, marginBottom: 2 },
+    cardSub:   { fontSize: 12, color: C.textMuted },
+    cardPrice: { fontSize: 16, fontWeight: '800', color: C.text },
 
-    cardHeader: { flexDirection: 'row', alignItems: 'flex-start' },
-    cardLeft:   { flex: 1, marginRight: 12 },
-    cardRight:  { alignItems: 'flex-end' },
-    cardTitle:  { fontSize: 15, fontWeight: '600', color: C.text, marginBottom: 4 },
-    cardAddr:   { fontSize: 12, color: C.textMuted, marginBottom: 2 },
-    cardFrom:   { fontSize: 12, color: C.textMuted },
-    cardPrice:  { fontSize: 18, fontWeight: '800', color: C.executor, marginBottom: 6 },
+    cardBottom: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 8 },
+    badge:      { borderRadius: RADIUS.sm, paddingHorizontal: 10, paddingVertical: 4 },
+    badgeText:  { fontSize: 11, fontWeight: '600' },
 
-    categoryPill: { backgroundColor: 'rgba(6,182,212,0.12)', borderRadius: C_RADIUS.sm, paddingHorizontal: 8, paddingVertical: 3, borderWidth: 1, borderColor: C.executor + '30' },
-    categoryText: { fontSize: 11, color: C.executorLight, fontWeight: '600' },
+    addrRow:  { flexDirection: 'row', alignItems: 'center', gap: 4, flex: 1 },
+    addrText: { fontSize: 11, color: C.textLight, flex: 1 },
 
-    stateBadge:     { borderRadius: C_RADIUS.sm, paddingHorizontal: 8, paddingVertical: 3, borderWidth: 1 },
-    stateBadgeText: { fontSize: 11, fontWeight: '600' },
+    acceptBtn: {
+      borderRadius: RADIUS.md,
+      paddingVertical: 8, paddingHorizontal: 16,
+      alignItems: 'center', marginLeft: 'auto',
+    },
+    acceptBtnText: { fontSize: 13, fontWeight: '700', color: '#fff' },
 
+    // Empty
     empty:     { alignItems: 'center', paddingTop: 80 },
-    emptyIcon: { fontSize: 48, marginBottom: 16 },
-    emptyText: { fontSize: 16, fontWeight: '700', color: C.text, marginBottom: 8 },
-    emptyHint: { fontSize: 14, color: C.textMuted },
+    emptyText: { fontSize: 16, fontWeight: '600', color: C.text, marginTop: 12 },
   });
 }

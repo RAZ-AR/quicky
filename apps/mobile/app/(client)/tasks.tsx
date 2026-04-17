@@ -4,7 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useTaskStore } from '../../src/stores/taskStore';
-import { RADIUS, CATEGORIES, TASK_STATE_COLORS, TASK_STATE_LABELS, type AppColors } from '../../src/constants/config';
+import { RADIUS, SHADOW, NEO, CATEGORIES, TASK_STATE_COLORS, TASK_STATE_LABELS, type AppColors } from '../../src/constants/config';
 import { useAppTheme } from '../../src/hooks/useAppTheme';
 import type { Task } from '../../src/services/api';
 
@@ -126,7 +126,7 @@ export default function ClientTasksTab() {
   const router = useRouter();
   const { myTasks, isLoading, loadMyTasks } = useTaskStore();
   const { COLORS, isDark } = useAppTheme();
-  const styles = useMemo(() => makeStyles(COLORS), [COLORS]);
+  const styles = useMemo(() => makeStyles(COLORS, isDark), [COLORS, isDark]);
 
   useEffect(() => { loadMyTasks(); }, []);
 
@@ -213,7 +213,7 @@ export default function ClientTasksTab() {
 }
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
-function makeStyles(C: typeof import('../../src/constants/config').DARK_COLORS) {
+function makeStyles(C: typeof import('../../src/constants/config').DARK_COLORS, isDark: boolean) {
   return StyleSheet.create({
   root:  { flex: 1, backgroundColor: C.bg },
   safe:  { flex: 1 },
@@ -264,9 +264,16 @@ function makeStyles(C: typeof import('../../src/constants/config').DARK_COLORS) 
     borderRadius: 16,
     borderLeftWidth: 4,
     borderLeftColor: C.border,
-    marginBottom: 10,
+    marginBottom: 12,
     padding: 14,
     gap: 10,
+    ...(isDark ? SHADOW.sm : {
+      shadowColor: '#9BA3BC',
+      shadowOffset: { width: 5, height: 5 },
+      shadowOpacity: 0.40,
+      shadowRadius: 10,
+      elevation: 8,
+    }),
   },
 
   // Card top row

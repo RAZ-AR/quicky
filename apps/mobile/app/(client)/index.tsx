@@ -9,7 +9,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useAuthStore } from '../../src/stores/authStore';
 import { useTaskStore } from '../../src/stores/taskStore';
 import {
-  RADIUS, SHADOW, CATEGORIES, TASK_STATE_LABELS, TASK_STATE_COLORS,
+  RADIUS, SHADOW, NEO, CATEGORIES, TASK_STATE_LABELS, TASK_STATE_COLORS,
   type AppColors,
 } from '../../src/constants/config';
 import { useAppTheme } from '../../src/hooks/useAppTheme';
@@ -255,7 +255,7 @@ export default function ClientHomeScreen() {
           <View style={styles.statsRow}>
             {/* Active */}
             <View style={styles.statCard}>
-              <Text style={[styles.statValue, { color: '#FF8C5A' }]}>
+              <Text style={[styles.statValue, { color: COLORS.primary }]}>
                 {active.length}
               </Text>
               <Text style={styles.statLabel}>{t.active.toUpperCase()}</Text>
@@ -263,7 +263,7 @@ export default function ClientHomeScreen() {
             <View style={styles.statDivider} />
             {/* Completed */}
             <View style={styles.statCard}>
-              <Text style={[styles.statValue, { color: '#A8F0B0' }]}>
+              <Text style={[styles.statValue, { color: COLORS.success }]}>
                 {completed.length}
               </Text>
               <Text style={styles.statLabel}>{t.completed.toUpperCase()}</Text>
@@ -271,7 +271,7 @@ export default function ClientHomeScreen() {
             <View style={styles.statDivider} />
             {/* Spent */}
             <View style={styles.statCard}>
-              <Text style={[styles.statValue, { color: '#FFFFFF' }]}>
+              <Text style={[styles.statValue, { color: COLORS.text }]}>
                 {totalSpent > 0 ? `${totalSpent.toLocaleString('ru')}₽` : '—'}
               </Text>
               <Text style={styles.statLabel}>{t.spent.toUpperCase()}</Text>
@@ -490,8 +490,7 @@ function makeStyles(C: AppColors, isDark: boolean, R = RADIUS) {
       borderRadius: R.full,
       paddingHorizontal: 12,
       paddingVertical: 8,
-      borderWidth: 1,
-      borderColor: C.border,
+      ...(isDark ? { borderWidth: 1, borderColor: C.border } : NEO.btn),
     },
     langBtnText: { fontSize: 12, fontWeight: '700', color: C.text },
     langChevron: { fontSize: 8, color: C.textMuted },
@@ -525,9 +524,7 @@ function makeStyles(C: AppColors, isDark: boolean, R = RADIUS) {
       paddingVertical: 18,
       paddingHorizontal: 20,
       marginBottom: 32,
-      borderWidth: 1,
-      borderColor: C.divider,
-      ...SHADOW.sm,
+      ...(isDark ? SHADOW.sm : NEO.card),
     },
     statCard:    { flex: 1, alignItems: 'center' },
     statValue:   { fontSize: 22, fontWeight: '700', marginBottom: 4 },
@@ -602,9 +599,7 @@ function makeStyles(C: AppColors, isDark: boolean, R = RADIUS) {
       flexDirection: 'row',
       alignItems: 'center',
       gap: 14,
-      borderWidth: 1,
-      borderColor: C.border,
-      borderStyle: 'dashed',
+      ...(isDark ? { borderWidth: 1, borderColor: C.border, borderStyle: 'dashed' as const } : NEO.card),
     },
     emptyIconWrap: {
       width: 44,
@@ -627,11 +622,16 @@ function makeStyles(C: AppColors, isDark: boolean, R = RADIUS) {
       alignItems: 'center',
       paddingVertical: 14,
       paddingHorizontal: 16,
-      marginBottom: 8,
+      marginBottom: 10,
       borderLeftWidth: 4,
-      borderLeftColor: C.border,
-      overflow: 'hidden',
-      ...SHADOW.sm,
+      borderLeftColor: 'transparent', // set inline per-card
+      ...(isDark ? { overflow: 'hidden' as const, ...SHADOW.sm } : {
+        shadowColor: '#9BA3BC',
+        shadowOffset: { width: 5, height: 5 },
+        shadowOpacity: 0.40,
+        shadowRadius: 10,
+        elevation: 8,
+      }),
     },
     histContent:   { flex: 1, marginRight: 10 },
     histTitle:     { fontSize: 14, fontWeight: '600', color: C.text, marginBottom: 3 },

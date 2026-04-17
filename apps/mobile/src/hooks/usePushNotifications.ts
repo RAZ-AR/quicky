@@ -1,34 +1,41 @@
 import { useEffect, useRef } from 'react';
 import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
+import Constants from 'expo-constants';
 import { router } from 'expo-router';
 import { api } from '../services/api';
 import { useAuthStore } from '../stores/authStore';
 
-// Как показывать уведомления когда приложение открыто
-Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldShowAlert: true,
-    shouldPlaySound: true,
-    shouldSetBadge: true,
-    shouldShowBanner: true,
-    shouldShowList: true,
-  }),
-});
+// Expo Go не поддерживает push-уведомления (SDK 53+)
+const IS_EXPO_GO = Constants.appOwnership === 'expo';
+
+// Настраиваем handler только вне Expo Go
+if (!IS_EXPO_GO) {
+  Notifications.setNotificationHandler({
+    handleNotification: async () => ({
+      shouldShowAlert: true,
+      shouldPlaySound: true,
+      shouldSetBadge: true,
+      shouldShowBanner: true,
+      shouldShowList: true,
+    }),
+  });
+}
 
 export function usePushNotifications() {
   const notificationListener = useRef<Notifications.EventSubscription | null>(null);
   const responseListener = useRef<Notifications.EventSubscription | null>(null);
 
   useEffect(() => {
+    // В Expo Go пуши не работают — пропускаем
+    if (IS_EXPO_GO) return;
+
     registerForPushNotifications();
 
-    // Уведомление получено когда приложение открыто
-    notificationListener.current = Notifications.addNotificationReceivedListener((_notification) => {
-      // Socket.io уже обновит UI, это для badge/звука
+    notificationListener.current = Notifications.addNotificationReceivedListener(() => {
+      // Socket.io обновит UI — здесь только badge/звук
     });
 
-    // Пользователь нажал на уведомление
     responseListener.current = Notifications.addNotificationResponseReceivedListener((response) => {
       const data = response.notification.request.content.data as { task_id?: string };
       if (!data.task_id) return;
@@ -59,14 +66,10 @@ async function registerForPushNotifications() {
 
     if (finalStatus !== 'granted') return;
 
-    // Только на реальном девайсе (не симулятор)
     const tokenData = await Notifications.getExpoPushTokenAsync().catch(() => null);
     if (!tokenData) return;
 
-    // Регистрируем токен на сервере
-    await api.post('/auth/push-token', { token: tokenData.data }).catch(() => {
-      // Не критично если сервер не принял токен
-    });
+    await api.post('/auth/push-token', { token: tokenData.data }).catch(() => null);
 
     if (Platform.OS === 'android') {
       await Notifications.setNotificationChannelAsync('default', {
@@ -76,6 +79,6 @@ async function registerForPushNotifications() {
       });
     }
   } catch {
-    // push не работают в симуляторе — не критично
+    // push не работают в симуляторе
   }
 }

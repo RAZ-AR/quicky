@@ -136,18 +136,23 @@ export const useTaskStore = create<TaskState>((set, get) => ({
     try {
       const { data } = await api.get('/tasks/my');
       set({ myTasks: data.tasks });
+    } catch {
+      // API unavailable — mock data shown as fallback in UI
     } finally {
       set({ isLoading: false });
     }
   },
 
   loadTask: async (taskId) => {
-    const { data } = await api.get(`/task/${taskId}`);
-    set({ activeTask: data.task });
-    // Обновляем в списке если есть
-    set((s) => ({
-      myTasks: s.myTasks.map((t) => t.id === taskId ? data.task : t),
-    }));
+    try {
+      const { data } = await api.get(`/task/${taskId}`);
+      set({ activeTask: data.task });
+      set((s) => ({
+        myTasks: s.myTasks.map((t) => t.id === taskId ? data.task : t),
+      }));
+    } catch {
+      // ignore
+    }
   },
 
   loadFeed: async (lat, lng) => {
@@ -155,6 +160,8 @@ export const useTaskStore = create<TaskState>((set, get) => ({
     try {
       const { data } = await api.get('/tasks/feed', { params: { lat, lng } });
       set({ feed: data.tasks });
+    } catch {
+      // ignore — no feed available offline
     } finally {
       set({ isFeedLoading: false });
     }
